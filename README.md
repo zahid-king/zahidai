@@ -18,18 +18,22 @@ New registrations become active immediately and can sign in without administrato
 
 ## Public hosting
 
-### HostNexo VPS (chosen setup)
+### HostNexo Cloud Hosting (chosen setup)
 
-Use a HostNexo VPS, not shared/cPanel hosting. The VPS page advertises root access, which this Docker app needs. Confirm the selected plan is available and supports Docker/Compose before paying; the checkout page may show unavailable inventory. Ask HostNexo to provision a recent Ubuntu LTS VPS with a public IPv4 address and inbound ports 80 and 443 available.
+Use cPanel's Node.js application feature. The app needs Node.js 22.5 or newer because it uses the built-in `node:sqlite` module. Ask HostNexo to confirm that the Cloud Hosting account has Node.js 22.5+ (not merely a generic Node.js label), the cPanel Application Manager or Node.js Selector, a writable persistent data folder, and environment-variable support. cPanel's default Passenger startup file is `app.js`, provided here as a wrapper for `server.js`.
 
-1. Point your domain's DNS `A` record to the VPS public IPv4 address and wait for it to resolve.
-2. Connect to the VPS over SSH. Install Docker Engine and the Docker Compose plugin, or ask HostNexo support to install them.
-3. Clone this public GitHub repository onto the VPS and enter its folder.
-4. Copy `.env.example` to `.env`. Set `KLING_API_KEY`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` (at least 12 characters), and `DOMAIN` to your real values. Keep `.env` private and never upload it to GitHub.
-5. Run `docker compose up -d --build`. The Compose setup runs the app behind Caddy, requests HTTPS for your domain, and stores SQLite data in a persistent Docker volume.
-6. Check startup with `docker compose logs -f app`, then visit your domain and sign in using the admin email and password.
+1. Point your domain to the hosting account and wait for DNS to resolve.
+2. In cPanel, open **Setup Node.js App** or **Application Manager** and create a production Node.js app with version 22.5 or newer. Set the application root to a private folder such as `zahid-ai`, set the application URL to your domain, and use `app.js` as the startup file.
+3. Clone this GitHub repository into the application root using cPanel's Git Version Control, or upload the source files. Do not upload `.env` or the local `data` folder.
+4. In the app's cPanel environment-variable settings, set `KLING_API_KEY`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` (at least 12 characters), `NODE_ENV=production`, and `DATA_DIR` to a writable persistent directory outside `public_html`, such as `/home/CPANEL_USERNAME/zahid-ai-data`.
+5. Install the app's dependencies with the cPanel Node app controls (`npm install`; this project currently has no external runtime dependencies), then deploy/restart the app.
+6. Open your domain, sign in with the admin email/password, and configure payments and social links in Admin.
 
-The VPS setup requires maintaining the server and making off-server backups. The Docker volume persists through container rebuilds, but it is not a backup if the VPS itself is lost. Configure HostNexo snapshots or copy regular SQLite backups to a separate storage location. Do not copy the local `data/zahid.sqlite` from your PC unless you intentionally need to migrate its users and balances.
+cPanel should proxy HTTPS requests to the Node process and provide the domain's SSL certificate. Keep the SQLite data directory persistent and backed up. Do not copy the local `data/zahid.sqlite` from your PC unless you intentionally need to migrate its users and balances.
+
+### HostNexo VPS alternative
+
+The repository also includes `docker-compose.yml` and `Caddyfile` for a HostNexo VPS. The VPS listing advertises SSH/root access. Use a recent Ubuntu LTS VPS, point the domain's DNS `A` record to its public IPv4 address, configure `KLING_API_KEY`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `DOMAIN` in a private `.env`, then run `docker compose up -d --build`. Docker stores SQLite in a named volume and Caddy requests HTTPS. Keep separate backups; the volume is not a backup if the VPS itself is lost.
 
 ### Render alternative
 
