@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zahid AI — AI video studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#EBF9F1',
+              100: '#D1F2E0',
+              200: '#A7E5C4',
+              500: '#22C55E',
+              600: '#16A34A',
+              700: '#15803D',
+              800: '#166534',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #F8FAFC;
+      color: #0F172A;
+      margin: 0;
+    }
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    .fade-in { animation: fadeIn 0.18s ease-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .pulse-dot { animation: pulseDot 1.5s infinite; }
+  </style>
+</head>
+<body class="antialiased selection:bg-brand-100 selection:text-brand-800">
+
+  <!-- Toast / Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Modal Container -->
+  <div id="modal-root" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4"></div>
+  <div id="public-screen"></div>
+  <div id="auth-screen" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-50 p-4"></div>
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="mobile-backdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 z-30 bg-slate-900/40 hidden lg:hidden"></div>
+
+  <div id="app-shell" class="min-h-screen flex bg-[#F8FAFC] hidden">
+    <!-- PERSISTENT LEFT SIDEBAR -->
+    <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-40 h-screen w-[256px] bg-white border-r border-slate-200/90 flex flex-col justify-between transition-transform duration-200 -translate-x-full lg:translate-x-0 shrink-0">
+      
+      <!-- Top Brand & Navigation -->
+      <div class="flex flex-col overflow-y-auto">
+        <!-- Brand Header -->
+        <div class="px-5 pt-5 pb-4 flex items-center justify-between">
+          <a href="#home" onclick="navigate('home'); return false;" class="flex items-center gap-3 group">
+            <!-- Custom Emerald Geometric 'Z' Logo -->
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-sm shadow-brand-600/20 shrink-0 group-hover:scale-105 transition-transform">
+              <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
+                <path d="M5 6.5H19L8.5 17.5H19" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="18.5" cy="6.5" r="1.5" fill="#A7E5C4"/>
+              </svg>
+            </div>
+            <div class="leading-tight">
+              <div id="sidebar-brand-name" class="font-bold text-[17px] text-slate-900 tracking-tight">Zahid AI</div>
+              <div id="sidebar-brand-sub" class="text-[11.5px] text-slate-500 font-medium">AI video generation</div>
+            </div>
+          </a>
+          <button onclick="toggleMobileSidebar(false)" class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:bg-slate-100">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Primary Navigation Super-Links -->
+        <nav class="px-3 mt-1 space-y-1" id="sidebar-nav">
+          <!-- Rendered dynamically by JS -->
+        </nav>
+      </div>
+
+      <!-- Bottom Sidebar Widgets -->
+      <div class="p-3 space-y-2.5 border-t border-slate-100 bg-white">
+        <!-- Support Card -->
+        <div class="rounded-xl bg-slate-50/90 border border-slate-200/75 p-3">
+          <div class="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
+            <span>Support</span>
+            <span class="text-[10px] font-medium text-brand-700 bg-brand-50 px-1.5 py-0.5 rounded">24/7 Live</span>
+          </div>
+          <div class="grid grid-cols-1 gap-2">
+            <a id="sidebar-wa-link" href="https://wa.me/923079709624" target="_blank" rel="noopener" class="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-white border border-slate-200 hover:border-brand-500 hover:text-brand-700 text-xs font-medium text-slate-700 transition">
+              <span class="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">W</span>
+              <span>WhatsApp</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Credit Balance Card (Replaces Wallet Balance) -->
+        <div onclick="openTopUpModal()" class="cursor-pointer rounded-xl bg-brand-50/70 hover:bg-brand-50 border border-brand-200/80 p-3 transition group">
+          <div class="flex items-center justify-between text-xs text-slate-600 mb-0.5">
+            <span class="font-medium">Credit balance</span>
+            <span class="text-brand-700 font-semibold group-hover:underline">+ Top up</span>
+          </div>
+          <div id="sidebar-credit-balance" class="text-lg font-extrabold text-slate-900 tracking-tight">0 Credits</div>
+          <div id="sidebar-video-est" class="text-xs font-medium text-brand-700 mt-0.5">Live app balance</div>
+        </div>
+
+        <!-- User Profile Footer -->
+        <div class="rounded-xl border border-slate-200/80 bg-white p-2.5 flex items-center justify-between transition">
+          <div class="min-w-0 pr-2">
+            <div id="sidebar-user-email" class="text-xs font-semibold text-slate-800 truncate">Signed out</div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span id="sidebar-approval-dot" class="w-2 h-2 rounded-full bg-brand-600"></span>
+              <span id="sidebar-user-sub" class="text-[11px] text-slate-500">Personal • Approved</span>
+            </div>
+          </div>
+          <button onclick="logoutApp()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-slate-100">Sign out</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT SHELL -->
+    <div class="flex-1 flex flex-col min-w-0">
+      
+      <!-- TOP UTILITY HEADER -->
+      <header class="sticky top-0 z-20 h-14 bg-white/95 backdrop-blur-xs border-b border-slate-200/90 px-4 lg:px-8 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <button onclick="toggleMobileSidebar(true)" class="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="flex items-center gap-2 text-sm">
+            <span id="header-page-title" class="font-semibold text-slate-800">Home</span>
+            <span id="header-approval-pill" class="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
+              ✓ Approved Account
+            </span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Quick User / Admin View Toggle Pill -->
+          <div class="hidden md:flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 text-xs font-semibold">
+            <button id="toggle-user-view" onclick="navigate('home')" class="px-2.5 py-1 rounded-lg transition">User View</button>
+            <button id="toggle-admin-view" onclick="navigate('admin')" class="px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+              <span>Admin Panel</span>
+              <span id="admin-pending-badge" class="bg-amber-500 text-white text-[10px] px-1.5 rounded-full">2</span>
+            </button>
+          </div>
+
+          <!-- Request Credits Button -->
+          <button onclick="openTopUpModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
+            <span>+ Request Credits</span>
+          </button>
+
+          <!-- Language Selector -->
+          <div class="relative">
+            <select id="lang-select" onchange="changeLanguage(this.value)" class="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 cursor-pointer focus:outline-none focus:border-brand-500">
+              <option value="EN">EN</option>
+              <option value="HI">HI</option>
+              <option value="UR">UR</option>
+            </select>
+          </div>
+
+          <!-- Notification Bell -->
+          <div class="relative">
+            <button onclick="toggleNotifications()" class="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              <span id="notif-badge" class="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">1</span>
+            </button>
+
+            <!-- Notifications Popover -->
+            <div id="notif-popover" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 fade-in">
+              <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                <span class="font-bold text-sm text-slate-900">Notifications</span>
+                <button onclick="markAllNotifsRead()" class="text-xs font-semibold text-brand-600 hover:underline">Mark all read</button>
+              </div>
+              <div id="notif-list" class="divide-y divide-slate-100 max-h-64 overflow-y-auto mt-1"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- DYNAMIC PAGE VIEWPORT -->
+      <main id="app-viewport" class="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1380px] w-full mx-auto fade-in">
+        <!-- Rendered by JS Router -->
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // State is loaded from the authenticated backend; no demo seed data.
+    // =========================================================================
+    const DEFAULT_STATE = {
+      activeRoute: "home", adminSubTab: "users", activeUserId: "", language: "EN",
+      settings: { brandName: "Zahid AI", brandSubtitle: "AI video generation", upstreamApiKey: "", apiConnected: false, whatsappUrl: "", paymentInstructions: "", currency: "PKR", paymentMethods: [], creditsPerVnd: 1, socialLinks: { tiktok: '', youtube: '', facebook: '', instagram: '' } },
+      pricing: { flash_5s: 0, flash_10s: 0, flash_15s: 0, pro_5s: 0, pro_10s: 0, pro_15s: 0, motion_control: 0, omni_reference: 0 },
+      packages: [], users: [], creditRequests: [], batches: [], transactions: [], notifications: [],
+      studio: { mainTab: "standard", subTab: "image_to_video", model: "2.6", duration: "5s", aspectRatio: "9:16 portrait", resolution: "720p", audio: false, framing: "Full body", keepSampleAudio: true, prompts: [""], lastUsedPrompt: "", uploadedImageName: "", firstFrameSet: false, lastFrameSet: false, motionVideoName: "", characterPhotoName: "", omniRefsCount: 0 },
+      batchFilterStatus: "all", batchFilterDate: "any", videoFilterStatus: "all", videoFilterDate: "any", selectedVideoIds: []
+    };
+    function loadState() { return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+    let state = loadState();
+    // Selected browser files are kept in memory only and are never written to localStorage.
+    const studioFiles = { images: [], motion: [], character: [], omni: [], first: null, last: null };
+    let klingPriceRules = [];
+    let pendingKlingRequest = null;
+    let csrfToken = '';
+    let currentSession = null;
+    async function backend(path, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers };
+      if (!['GET', 'HEAD'].includes(method) && !path.startsWith('/api/auth/')) headers['X-CSRF-Token'] = csrfToken;
+      const response = await fetch(path, { ...options, method, credentials: 'same-origin', headers });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) { const error = new Error(result?.error?.message || `Request failed (${response.status})`); error.status = response.status; error.code = result?.error?.code; throw error; }
+      return result;
+    }
+    let authMode = 'login';
+    const WHATSAPP_NUMBER = '923079709624';
+    const SOCIAL_NETWORKS = [
+      { key: 'tiktok', name: 'TikTok' },
+      { key: 'youtube', name: 'YouTube' },
+      { key: 'facebook', name: 'Facebook' },
+      { key: 'instagram', name: 'Instagram' }
+    ];
+    const CREDIT_PLANS = [
+      { name: 'Starter', credits: 50000, price: 5, note: 'A simple way to get started' },
+      { name: 'Standard', credits: 100000, price: 10, note: 'More room for regular creation' },
+      { name: 'Creator Pro', credits: 150000, price: 15, note: 'For frequent video projects', featured: true },
+      { name: 'Custom', credits: null, price: null, note: 'Tell us what your team needs' },
+    ];
+    const SHOWCASE_VIDEOS = [
+      { title: 'A city in motion', prompt: 'A cinematic time-lapse sweeps across a glowing city skyline after dark.', src: 'https://videos.pexels.com/video-files/8064157/8064157-hd_1920_1080_30fps.mp4', poster: 'https://images.pexels.com/videos/8064157/pexels-photo-8064157.jpeg?auto=compress&dpr=1&h=750&w=1260', page: 'https://www.pexels.com/video/time-lapse-footage-of-a-busy-city-at-night-8064157/' },
+      { title: 'Into the forest', prompt: 'A quiet cinematic glide moves through a lush forest of tall trees and moss.', src: 'https://videos.pexels.com/video-files/953185/953185-hd_1920_1080_25fps.mp4', poster: 'https://images.pexels.com/videos/953185/free-video-953185.jpg?auto=compress&dpr=1&h=750&w=1260', page: 'https://www.pexels.com/video/tranquil-forest-landscape-with-tall-trees-953185/' },
+    ];
+    let publicPriceRules = [];
+    function escapePublicText(value) { return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+    function showPublicLanding() {
+      const screen = document.getElementById('public-screen');
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('auth-screen').classList.remove('flex');
+      screen.classList.remove('hidden');
+      const socialLinks = SOCIAL_NETWORKS.filter(social => state.settings.socialLinks?.[social.key]);
+      const uniqueModels = [...new Set(publicPriceRules.filter(rule => rule.enabled).map(rule => rule.model))];
+      const modelNames = uniqueModels.length ? uniqueModels : ['4.0 Flash', '4.0', 'Motion Control', 'Omni Reference'];
+      screen.innerHTML = `
+        <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+          <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
+            <a href="#top" class="flex items-center gap-3 font-extrabold text-slate-900"><span class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-green-700 text-xl text-white shadow-lg shadow-emerald-700/20">Z</span><span>Zahid AI <small class="block text-xs font-medium text-slate-500">AI video studio</small></span></a>
+            <nav class="hidden items-center gap-7 text-sm font-semibold text-slate-600 md:flex"><a href="#features" class="hover:text-emerald-700">Features</a><a href="#models" class="hover:text-emerald-700">Video tools</a><a href="#pricing" class="hover:text-emerald-700">Pricing</a><a href="#payments" class="hover:text-emerald-700">Payments</a></nav>
+            <div class="flex gap-2"><button onclick="authMode='login';showAuthentication()" class="rounded-xl px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100">Sign in</button><button onclick="authMode='register';showAuthentication()" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-emerald-700/20 hover:bg-emerald-700">Create account</button></div>
+          </div>
+        </header>
+        <main id="top" class="overflow-hidden bg-[#f7fbf8]">
+          <section class="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-24">
+            <div class="relative z-10"><div class="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Your ideas, turned into video</div><h1 class="max-w-2xl text-5xl font-extrabold leading-[1.04] tracking-tight text-slate-950 sm:text-6xl">Kling 4.0 is here.<br><span class="text-emerald-600">Motion Control is back.</span></h1><p class="mt-6 max-w-xl text-lg leading-8 text-slate-600">Create cinematic AI videos from a prompt, a photo, motion guidance, or visual references—all from one simple studio.</p><div class="mt-8 flex flex-wrap gap-3"><button onclick="authMode='register';showAuthentication()" class="rounded-xl bg-emerald-600 px-6 py-3.5 font-bold text-white shadow-lg shadow-emerald-700/20 hover:bg-emerald-700">Start creating <span aria-hidden="true">→</span></button><a href="#showcase" class="rounded-xl border border-slate-200 bg-white px-6 py-3.5 font-bold text-slate-800 hover:border-emerald-300">Watch the showcase</a></div><div class="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-slate-500"><span>✓ Multiple creative workflows</span><span>✓ Live prices before creation</span><span>✓ Manual payment review</span></div></div>
+            <div class="relative mx-auto w-full max-w-xl"><div class="absolute -inset-8 rounded-full bg-emerald-200/50 blur-3xl"></div><div class="relative rounded-[2rem] border border-white bg-gradient-to-br from-emerald-100 via-white to-lime-100 p-5 shadow-2xl shadow-emerald-900/10"><div class="flex items-center justify-between rounded-t-2xl border border-white/80 bg-white/75 px-4 py-3"><div><div class="text-xs font-bold uppercase tracking-[.18em] text-emerald-700">Zahid AI Studio</div><div class="mt-1 font-bold text-slate-900">A little more imagination</div></div><span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Ready to create</span></div><div class="relative mt-3 flex aspect-[4/3] items-end overflow-hidden rounded-2xl bg-cover bg-center p-6" style="background-image:linear-gradient(0deg,rgba(2,18,16,.66),rgba(2,18,16,.08) 72%),url('https://images.pexels.com/videos/953185/free-video-953185.jpg?auto=compress&dpr=1&h=750&w=1260')"><div class="relative max-w-xs rounded-2xl border border-white/40 bg-slate-950/45 p-4 text-white shadow-lg backdrop-blur-md"><div class="text-xs font-bold uppercase tracking-widest text-emerald-200">Prompt to video</div><p class="mt-2 text-lg font-bold">“A quiet forest opens into a glowing world…”</p><div class="mt-3 flex items-center gap-2 text-xs text-white/80"><span class="h-2 w-2 animate-pulse rounded-full bg-emerald-300"></span> Made for your next story</div></div></div><div class="mt-3 grid grid-cols-3 gap-3">${[['01','Describe','Write a prompt'],['02','Personalize','Choose a model'],['03','Create','Generate a video']].map(x=>`<div class="rounded-xl bg-white p-3"><span class="text-xs font-extrabold text-emerald-600">${x[0]}</span><div class="mt-1 text-sm font-bold text-slate-900">${x[1]}</div><div class="text-[11px] text-slate-500">${x[2]}</div></div>`).join('')}</div></div></div>
+          </section>
+          <section id="features" class="bg-white py-16"><div class="mx-auto max-w-7xl px-5 lg:px-8"><div class="max-w-2xl"><div class="text-sm font-bold uppercase tracking-widest text-emerald-700">One studio, many ways to create</div><h2 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">Everything you need to shape a video</h2><p class="mt-4 text-slate-600">Pick the creative workflow that fits your idea and keep your projects together.</p></div><div class="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">${[['✦','Prompt to video','Describe a scene and turn your words into a video.'],['▧','Image to video','Bring a starting image to life with a prompt.'],['◎','Omni Reference','Guide one video with a set of reference images.'],['↗','Motion Control','Use motion guidance to shape the movement.'],['▦','Batch creation','Prepare multiple prompts and create jobs together.'],['◖','Video library','Keep track of generation status and results.']].map(x=>`<article class="rounded-2xl border border-slate-200 bg-slate-50/80 p-6"><div class="grid h-11 w-11 place-items-center rounded-xl bg-emerald-100 text-xl font-bold text-emerald-700">${x[0]}</div><h3 class="mt-4 text-lg font-bold text-slate-900">${x[1]}</h3><p class="mt-2 text-sm leading-6 text-slate-600">${x[2]}</p></article>`).join('')}</div></div></section>
+          <section id="showcase" class="relative overflow-hidden bg-slate-950 py-16 text-white"><div class="absolute inset-0 opacity-40" style="background-image:radial-gradient(ellipse at 10% 10%,#14532d,transparent 40%),radial-gradient(ellipse at 90% 90%,#164e63,transparent 45%)"></div><div class="relative mx-auto max-w-7xl px-5 lg:px-8"><div class="flex flex-wrap items-end justify-between gap-5"><div><div class="text-sm font-bold uppercase tracking-[.2em] text-emerald-300">A world in motion</div><h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">Imagine it. Then watch it unfold.</h2><p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Explore cinematic landscape scenes and the prompt ideas behind them.</p></div><span class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300">Creative showcase · 16:9</span></div><div class="mx-auto mt-9 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">${SHOWCASE_VIDEOS.map((clip,index)=>`<article class="group overflow-hidden rounded-2xl border border-white/10 bg-white/[.06] shadow-2xl shadow-black/20"><div class="relative aspect-video overflow-hidden bg-gradient-to-br from-emerald-900 via-slate-800 to-indigo-950"><video class="showcase-clip absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" muted playsinline loop preload="none" poster="${clip.poster}" data-src="${clip.src}" aria-label="${escapePublicText(clip.title)} cinematic showcase"></video><div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/10"></div><div class="absolute left-3 top-3 rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur">${String(index+1).padStart(2,'0')} · Sample</div><div class="absolute bottom-3 left-3 right-3"><div class="text-base font-bold">${clip.title}</div><a class="mt-1 inline-block text-[10px] text-white/55 underline decoration-white/20 underline-offset-2 hover:text-white" href="${clip.page}" target="_blank" rel="noopener">Video by Pexels creator</a></div><button type="button" onclick="toggleShowcaseVideo(this)" aria-label="Play or pause ${escapePublicText(clip.title)}" class="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-white/30 bg-black/30 text-sm text-white backdrop-blur">▶</button></div><div class="min-h-[118px] bg-white p-4 text-slate-900"><div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Prompt concept</div><p class="mt-2 text-xs leading-5 text-slate-600">“${clip.prompt}”</p></div></article>`).join('')}</div></div></section>
+          <section id="models" class="py-16"><div class="mx-auto max-w-7xl px-5 lg:px-8"><div class="flex flex-wrap items-end justify-between gap-4"><div><div class="text-sm font-bold uppercase tracking-widest text-emerald-700">Video generation</div><h2 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-950">Choose your creative tools</h2></div><span class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm">Made for creative work</span></div><div class="mt-8 flex flex-wrap gap-3">${modelNames.map(name=>`<span class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 shadow-sm">${escapePublicText(name)}</span>`).join('')}</div><p class="mt-4 text-xs text-slate-500">Available models and settings depend on your plan and selected creation mode.</p></div></section>
+          <section id="pricing" class="bg-slate-950 py-16 text-white"><div class="mx-auto max-w-7xl px-5 lg:px-8"><div class="mx-auto max-w-2xl text-center"><div class="text-sm font-bold uppercase tracking-widest text-emerald-300">Straightforward credit plans</div><h2 class="mt-3 text-3xl font-extrabold sm:text-4xl">Pick a plan that fits your pace</h2><p class="mt-4 text-slate-300">Every plan includes high-quality AI video creation and watermark-free MP4 downloads.</p></div><div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">${CREDIT_PLANS.map(plan=>{const estimatedVideos=plan.credits?Math.floor(plan.credits/250):null;const estimatedSeconds=estimatedVideos?estimatedVideos*10:null;return `<article class="relative rounded-2xl border ${plan.featured?'border-emerald-400 bg-emerald-950/70':'border-slate-700 bg-slate-900'} p-6">${plan.featured?'<span class="absolute -top-3 right-5 rounded-full bg-emerald-400 px-3 py-1 text-xs font-extrabold text-emerald-950">POPULAR</span>':''}<h3 class="text-lg font-bold">${plan.name}</h3><p class="mt-2 min-h-10 text-sm text-slate-300">${plan.note}</p><div class="mt-5 text-3xl font-extrabold">${plan.price===null?'Let’s talk':`$${plan.price}`}<span class="text-sm font-semibold text-slate-400">${plan.price===null?'':' / plan'}</span></div><div class="mt-2 text-sm font-semibold text-emerald-200">${plan.credits===null?'Flexible credit amount':`${plan.credits.toLocaleString()} credits`}</div><div class="mt-4 rounded-xl border border-white/10 bg-white/[.04] p-3"><div class="text-lg font-extrabold text-white">${estimatedVideos?`About ${estimatedVideos} videos`:'Custom video volume'}</div><div class="mt-1 text-xs leading-5 text-slate-300">${estimatedSeconds?`Up to 10 seconds each · about ${estimatedSeconds.toLocaleString()} seconds total`:'Set the credit amount that fits your needs'}</div></div><ul class="mt-4 space-y-2 text-xs leading-5 text-slate-300"><li><span class="mr-2 text-emerald-300">✓</span>HD and high-quality output options, where available</li><li><span class="mr-2 text-emerald-300">✓</span>Watermark-free MP4 downloads</li><li><span class="mr-2 text-emerald-300">✓</span>Use available video creation models</li></ul><button onclick="${plan.price===null?`window.open('https://wa.me/${WHATSAPP_NUMBER}?text='+encodeURIComponent('Hello, I would like a custom Zahid AI credit plan.'),'_blank','noopener')`:`authMode='register';showAuthentication()`}" class="mt-6 w-full rounded-xl ${plan.featured?'bg-emerald-400 text-emerald-950 hover:bg-emerald-300':'bg-white text-slate-950 hover:bg-emerald-50'} px-4 py-3 text-sm font-extrabold">${plan.price===null?'Ask about custom':'Choose plan'}</button></article>`}).join('')}</div><p class="mt-5 text-center text-xs leading-5 text-slate-400">Video estimates use 250 credits per 10-second video: 50,000 credits ≈ 200 videos / 2,000 seconds; 100,000 ≈ 400 videos / 4,000 seconds; 150,000 ≈ 600 videos / 6,000 seconds. Actual credit use varies by model, duration, and live price. Check your quote before generating. Plans are priced in USD; payment details and PKR amount are confirmed during manual payment review.</p></div></section>
+          <section id="payments" class="bg-white py-16"><div class="mx-auto max-w-7xl px-5 lg:px-8"><div class="max-w-2xl"><div class="text-sm font-bold uppercase tracking-widest text-emerald-700">Manual payments</div><h2 class="mt-3 text-3xl font-extrabold text-slate-950">Choose a payment method</h2><p class="mt-4 leading-7 text-slate-600">Make a transfer, then send its screenshot for review. We’ll open WhatsApp with your payment details so you can send them to the account owner.</p></div><div class="mt-8 grid gap-7 lg:grid-cols-[.95fr_1.05fr]"><div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">${[['EasyPaisa','03277184049','Account name: Muhammad Mursaleen'],['JazzCash','03097291283','Account name: Ghulam Sakeena'],['Bank transfer · UBL','PK47UNIL0109000289796852','IBAN · Account name: Muhammad Zahid Kareem']].map(([name,account,detail])=>`<article class="rounded-2xl border border-slate-200 bg-slate-50 p-5"><div class="text-sm font-extrabold text-emerald-700">${name}</div><div class="mt-3 break-all text-lg font-extrabold text-slate-900">${account}</div><div class="mt-1 text-xs text-slate-600">${detail}</div></article>`).join('')}</div><form class="rounded-3xl border border-slate-200 bg-[#f7fbf8] p-5 shadow-sm sm:p-7" onsubmit="sendLandingPaymentProof(event)"><div class="text-lg font-extrabold text-slate-900">Send payment proof</div><p class="mt-1 text-sm text-slate-600">Enter your Zahid AI account email so we know where to add the credits after approval.</p><div class="mt-5 grid gap-4 sm:grid-cols-2"><label class="text-xs font-bold text-slate-700">Account email<input id="proof-email" type="email" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm"></label><label class="text-xs font-bold text-slate-700">Credit plan<select id="proof-plan" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm">${CREDIT_PLANS.map(plan=>`<option value="${plan.name}">${plan.name}${plan.credits?` · ${plan.credits.toLocaleString()} credits · $${plan.price}`:' · custom amount'}</option>`).join('')}</select></label><label class="text-xs font-bold text-slate-700">Payment method<select id="proof-method" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm"><option value="EasyPaisa">EasyPaisa</option><option value="JazzCash">JazzCash</option><option value="Bank transfer">Bank transfer · UBL</option></select></label><label class="text-xs font-bold text-slate-700">Transaction reference<input id="proof-reference" required minlength="3" maxlength="120" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm"></label><label class="cursor-pointer rounded-xl border border-dashed border-emerald-300 bg-white p-4 sm:col-span-2"><span class="block text-xs font-bold text-slate-700">Payment screenshot</span><span class="mt-1 block text-xs text-slate-500">Choose an image, up to 10 MB</span><input id="proof-image" type="file" accept="image/*" required class="mt-3 block w-full text-xs text-slate-600" onchange="showPaymentProofFile(this)"></label></div><div id="proof-image-preview" class="mt-3 hidden items-center gap-3 rounded-xl bg-white p-2 text-xs text-slate-600"></div><button class="mt-5 w-full rounded-xl bg-emerald-600 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-emerald-700">Continue to WhatsApp with screenshot</button><p id="proof-share-status" aria-live="polite" class="mt-3 text-xs leading-5 text-slate-500">Your device will ask you to confirm sharing. Choose WhatsApp, verify the recipient is 03079709624, then press Send.</p></form></div></div></section>
+          <footer class="border-t border-white/10 bg-slate-950 text-white"><div class="mx-auto max-w-7xl px-5 py-12 lg:px-8"><div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr]"><section><a href="#top" class="inline-flex items-center gap-3"><span class="grid h-11 w-11 place-items-center rounded-xl bg-emerald-500 text-xl font-extrabold text-white shadow-lg shadow-emerald-950/40">Z</span><span><span class="block text-lg font-extrabold">Zahid AI</span><span class="block text-xs text-slate-400">AI video studio</span></span></a><h2 class="mt-6 text-xl font-extrabold">Meet Zahid</h2><p class="mt-3 max-w-md text-sm leading-7 text-slate-300">I’m Zahid, an AI content creator and social media marketer. I help people create engaging content and build opportunities to make money online.</p></section><section><h2 class="text-sm font-extrabold uppercase tracking-widest text-emerald-300">Connect with me</h2><div class="mt-4 grid grid-cols-2 gap-2">${socialLinks.length ? socialLinks.map(social=>`<a href="${escapePublicText(state.settings.socialLinks[social.key])}" target="_blank" rel="noopener noreferrer" class="rounded-xl border border-white/10 bg-white/[.04] px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-emerald-400/50 hover:bg-white/[.08] hover:text-white">${social.name}<span aria-hidden="true" class="float-right text-emerald-300">↗</span></a>`).join('') : '<span class="col-span-2 text-sm text-slate-400">Social profiles coming soon.</span>'}</div></section><section><h2 class="text-sm font-extrabold uppercase tracking-widest text-emerald-300">Get in touch</h2><a href="tel:+${WHATSAPP_NUMBER}" class="mt-4 block text-base font-bold text-white hover:text-emerald-300">+92 307 970 9624</a><a href="https://wa.me/${WHATSAPP_NUMBER}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400">Chat on WhatsApp</a><button onclick="authMode='login';showAuthentication()" class="mt-5 block text-sm font-semibold text-slate-300 hover:text-white">Sign in to your account →</button></section></div><div class="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-xs text-slate-500"><span>© ${new Date().getFullYear()} Zahid AI · AI video generation</span><a href="#pricing" class="font-semibold hover:text-emerald-300">View plans</a></div></div></footer>
+        </main>`;
+      const clips = [...screen.querySelectorAll('.showcase-clip')];
+      if ('IntersectionObserver' in window) {
+        const playbackObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+          const video = entry.target;
+          const button = video.parentElement.querySelector('button');
+          if (entry.isIntersecting) {
+            if (!video.src) video.src = video.dataset.src;
+            clips.forEach(other => { if (other !== video) { other.pause(); const otherButton = other.parentElement.querySelector('button'); if (otherButton) otherButton.textContent = '▶'; } });
+            video.play().then(() => { if (button) button.textContent = 'Ⅱ'; }).catch(() => {});
+          } else { video.pause(); if (button) button.textContent = '▶'; }
+        }), { rootMargin: '120px 0px', threshold: 0.15 });
+        clips.forEach(video => playbackObserver.observe(video));
+      }
+    }
+    function toggleShowcaseVideo(button) {
+      const video = button.parentElement.querySelector('video');
+      if (!video.src) video.src = video.dataset.src;
+      if (video.paused) {
+        document.querySelectorAll('.showcase-clip').forEach(other => { if (other !== video) { other.pause(); const otherButton = other.parentElement.querySelector('button'); if (otherButton) otherButton.textContent = '▶'; } });
+        video.play().then(() => { button.textContent = 'Ⅱ'; }).catch(() => {});
+      }
+      else { video.pause(); button.textContent = '▶'; }
+    }
+    function showPaymentProofFile(input) {
+      const preview = document.getElementById('proof-image-preview');
+      const file = input.files?.[0];
+      if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+      if (!file) { preview.classList.add('hidden'); return; }
+      preview.classList.remove('hidden'); preview.classList.add('flex');
+      preview.dataset.objectUrl = URL.createObjectURL(file);
+      preview.innerHTML = `<img src="${preview.dataset.objectUrl}" alt="Payment screenshot preview" class="h-14 w-14 rounded-lg object-cover"><span class="min-w-0 truncate">${escapePublicText(file.name)} · ${(file.size / 1024 / 1024).toFixed(1)} MB</span>`;
+    }
+    async function sendLandingPaymentProof(event) {
+      event.preventDefault();
+      const file = document.getElementById('proof-image').files?.[0];
+      const status = document.getElementById('proof-share-status');
+      if (!file || !file.type.startsWith('image/')) { status.textContent = 'Choose a valid payment screenshot image first.'; return; }
+      if (file.size > 10 * 1024 * 1024) { status.textContent = 'The screenshot must be 10 MB or smaller.'; return; }
+      const email = document.getElementById('proof-email').value.trim();
+      const plan = document.getElementById('proof-plan').value;
+      const method = document.getElementById('proof-method').value;
+      const reference = document.getElementById('proof-reference').value.trim();
+      const selectedPlan = CREDIT_PLANS.find(item => item.name === plan);
+      const message = `Zahid AI payment proof\nAccount email: ${email}\nPlan: ${plan}${selectedPlan?.credits?` (${selectedPlan.credits.toLocaleString()} credits, $${selectedPlan.price})`:''}\nPayment method: ${method}\nTransaction reference: ${reference}\nPlease review and manually approve the credits.`;
+      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+        try {
+          await navigator.share({ files: [file], title: 'Zahid AI payment screenshot', text: message });
+          status.textContent = 'Share sheet opened. Choose WhatsApp, confirm 03079709624, and send the screenshot.';
+          return;
+        } catch (error) { if (error.name === 'AbortError') { status.textContent = 'Sharing was cancelled. You can submit again when ready.'; return; } }
+      }
+      const whatsappTab = window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+      if (whatsappTab) whatsappTab.opener = null;
+      status.textContent = whatsappTab ? 'WhatsApp opened. Attach the selected screenshot in that chat, confirm 03079709624, and press Send.' : 'Your browser blocked the WhatsApp window. Allow pop-ups, then submit again. You can attach the screenshot in WhatsApp.';
+    }
+    function showAuthentication(message = '') {
+      document.getElementById('public-screen').classList.add('hidden');
+      const box = document.getElementById('auth-screen');
+      box.classList.remove('hidden');
+      box.classList.add('flex');
+      box.innerHTML = `<div class="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white rounded-2xl border border-slate-200 p-7 shadow-xl"><button onclick="closeAuthentication()" class="mb-4 text-sm font-semibold text-slate-500 hover:text-emerald-700">← Back to home</button><div class="flex items-center gap-3 mb-5"><div class="w-11 h-11 rounded-xl bg-brand-600 text-white flex items-center justify-center text-xl font-bold">Z</div><div><div class="font-extrabold text-xl text-slate-900">Zahid AI</div><div class="text-xs text-slate-500">AI video studio</div></div></div><h1 class="text-2xl font-bold text-slate-900">${authMode === 'login' ? 'Sign in' : 'Create your account'}</h1><p class="text-sm text-slate-500 mt-1">${authMode === 'login' ? 'Sign in to continue to your video studio.' : 'Create an account and start right away. No approval required.'}</p>${message ? `<div class="mt-3 p-3 rounded-xl bg-amber-50 text-amber-900 text-sm">${message}</div>` : ''}<form id="auth-form" class="mt-5 space-y-3">${authMode === 'register' ? `<label class="block text-sm font-semibold">WhatsApp number<input id="auth-phone" type="tel" required autocomplete="tel" placeholder="+92 300 1234567" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200"><span class="mt-1 block text-xs font-normal text-slate-500">Include your country code.</span></label><label class="block text-sm font-semibold">City<input id="auth-city" type="text" required minlength="2" maxlength="100" autocomplete="address-level2" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200"></label>` : ''}<label class="block text-sm font-semibold">Email<input id="auth-email" type="email" required autocomplete="username" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200"></label><label class="block text-sm font-semibold">Password<input id="auth-password" type="password" required minlength="12" autocomplete="${authMode === 'login' ? 'current-password' : 'new-password'}" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200"></label>${authMode === 'register' ? `<label class="block text-sm font-semibold">Confirm password<input id="auth-confirm-password" type="password" required minlength="12" autocomplete="new-password" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200"></label>` : ''}<div id="auth-error" class="text-sm text-red-600"></div><button class="w-full py-2.5 rounded-xl bg-brand-600 text-white font-bold">${authMode === 'login' ? 'Sign in' : 'Create account'}</button></form><button onclick="authMode=authMode==='login'?'register':'login';showAuthentication()" class="mt-4 text-sm font-semibold text-brand-700">${authMode === 'login' ? 'Create an account' : 'Back to sign in'}</button></div>`;
+      document.getElementById('auth-form').addEventListener('submit', submitAuthentication);
+    }
+    function closeAuthentication() { document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('flex'); showPublicLanding(); }
+    async function submitAuthentication(event) {
+      event.preventDefault();
+      const error = document.getElementById('auth-error');
+      const isRegister = authMode === 'register';
+      try {
+        const password = document.getElementById('auth-password').value;
+        const payload = { email: document.getElementById('auth-email').value, password };
+        if (isRegister) {
+          const confirmPassword = document.getElementById('auth-confirm-password').value;
+          if (password !== confirmPassword) { error.textContent = 'The passwords do not match.'; return; }
+          payload.phone = document.getElementById('auth-phone').value;
+          payload.city = document.getElementById('auth-city').value;
+          payload.confirmPassword = confirmPassword;
+        }
+        const response = await backend(isRegister ? '/api/auth/register' : '/api/auth/login', { method: 'POST', body: JSON.stringify(payload) });
+        if (isRegister) { csrfToken = response.csrf; await enterApplication(); showToast('Welcome to Zahid AI', 'Your account is ready. Request credits when you are ready to create.'); return; }
+        csrfToken = response.csrf;
+        await enterApplication();
+      } catch (errorValue) { error.textContent = errorValue.message; }
+    }
+    async function enterApplication() {
+      await refreshDatabaseState();
+      document.getElementById('app-shell').classList.remove('hidden');
+      document.getElementById('public-screen').classList.add('hidden');
+      const box = document.getElementById('auth-screen');
+      box.classList.add('hidden'); box.classList.remove('flex');
+      const prices = await backend('/api/prices').catch(() => []);
+      klingPriceRules = Array.isArray(prices) ? prices : [];
+      const first = klingPriceRules.find(rule => rule.enabled && rule.textToVideo && !rule.motionControl && !rule.tailImage) || klingPriceRules.find(rule => rule.enabled && !rule.motionControl && !rule.tailImage);
+      if (first) { state.studio.model = first.model; state.studio.duration = `${first.durationSeconds}s`; state.studio.resolution = first.resolution; state.studio.audio = Boolean(first.audio); state.studio.aspectRatio = first.aspectRatio === '*' ? '9:16 portrait' : first.aspectRatio; }
+      renderShell(); renderPage();
+      state.batches.filter(item => item.remoteJobId && (item.status === 'processing' || (item.status === 'completed' && !item.videoUrl))).forEach(pollKlingJob);
+    }
+    async function logoutApp() {
+      try { await backend('/api/auth/logout', { method: 'POST' }); } catch (error) { console.warn(error.message); }
+      state = loadState(); csrfToken = ''; currentSession = null; showPublicLanding();
+    }
+    function klingSettings() {
+      const s = state.studio;
+      return { model: s.model, durationSeconds: Number.parseInt(s.duration, 10), aspectRatio: (s.aspectRatio || '9:16').split(' ')[0], resolution: s.resolution, audio: s.mainTab === 'omni' ? false : Boolean(s.audio) };
+    }
+    function getOmniPriceRule() {
+      return klingPriceRules.find(rule => rule.enabled && rule.model === '4.0-flash' && rule.durationSeconds === 11 && rule.resolution === '720p' && !rule.motionControl && !rule.tailImage) || null;
+    }
+    function isStudioAudioAvailable() {
+      const s = state.studio;
+      return klingPriceRules.some(rule => rule.enabled && rule.model === s.model && rule.durationSeconds === Number.parseInt(s.duration, 10) && rule.resolution === s.resolution && rule.audio === true && !rule.motionControl && Boolean(rule.tailImage) === (s.mainTab === 'standard' && s.subTab === 'first_last'));
+    }
+
+    function saveState() {
+      // User data is stored in the server database, never in browser localStorage.
+    }
+
+    function getCurrentUser() {
+      return state.users.find(u => String(u.id) === String(state.activeUserId)) || state.users[0] || { id: '', email: '', role: 'Creator', approved: false, suspended: false, credits: 0, videosCount: 0 };
+    }
+
+    async function refreshDatabaseState() {
+      currentSession = await backend('/api/me');
+      csrfToken = currentSession.csrf;
+      const apiUser = currentSession.user;
+      state.activeUserId = String(apiUser.id);
+      state.settings.paymentInstructions = currentSession.billing.paymentInstructions || '';
+      state.settings.paymentMethods = currentSession.billing.paymentMethods || [];
+      state.settings.currency = currentSession.billing.currency || 'PKR';
+      state.settings.creditsPerVnd = currentSession.billing.creditsPerVnd || 1;
+      const mapUser = user => ({ id: String(user.id), email: user.email, role: user.role === 'admin' ? 'Owner / Admin' : 'Creator', isAdmin: user.role === 'admin', approved: user.status === 'active', suspended: user.status === 'suspended', credits: Number(user.credits), videosCount: 0, apiKey: '', joinedAt: String(user.created_at || user.createdAt || '').slice(0, 10) });
+      state.users = [mapUser(apiUser)];
+      const jobResponse = await backend('/api/jobs');
+      state.batches = (jobResponse.jobs || []).map(job => ({ id: `K-${job.jobId}`, videoId: String(job.jobId), remoteJobId: String(job.jobId), userId: String(apiUser.id), model: `Kling ${job.model}`, mode: 'Video generation', duration: `${job.durationSeconds}s`, aspectRatio: job.aspectRatio || '9:16', resolution: job.resolution || '720p', creditsUsed: Number(job.creditsCharged), status: job.status === 'success' ? 'completed' : job.status === 'failed' ? 'failed' : job.status === 'canceled' ? 'canceled' : 'processing', createdAt: new Date(job.createdAt).toLocaleString(), dayBucket: 'today', prompt: job.prompt || '', videoUrl: job.videoUrl || '', error: job.errorCode || '' }));
+      const ledgerResponse = await backend('/api/ledger');
+      state.transactions = (ledgerResponse.transactions || []).map((item, index) => ({ id: item.ref || `ledger-${index}`, userId: String(apiUser.id), type: item.amount >= 0 ? 'credit' : 'debit', amount: Number(item.amount), note: item.note, date: new Date(item.created_at).toLocaleString() }));
+      state.creditRequests = (currentSession.creditRequests || []).map(item => ({ id: String(item.id), userId: String(apiUser.id), userEmail: apiUser.email, credits: Number(item.credits), amountPaid: `${item.paid_amount} ${item.currency}`, method: item.payment_method, txId: item.transaction_ref, status: item.status, createdAt: new Date(item.created_at).toLocaleString() }));
+      state.packages = [];
+      if (apiUser.role === 'admin') {
+        const [users, requests, jobs, adminSettings] = await Promise.all([backend('/api/admin/users'), backend('/api/admin/credit-requests'), backend('/api/admin/jobs'), backend('/api/admin/settings')]);
+        state.settings.socialLinks = adminSettings.socialLinks || state.settings.socialLinks;
+        state.users = (users.users || []).map(mapUser);
+        state.creditRequests = (requests.requests || []).map(item => ({ id: String(item.id), userId: String(item.user_id), userEmail: item.email, packageName: 'Manual top-up', credits: Number(item.credits), amountPaid: `${item.paid_amount} ${item.currency}`, method: item.payment_method, txId: item.transaction_ref, status: item.status, createdAt: new Date(item.created_at).toLocaleString() }));
+        state.batches = (jobs.jobs || []).map(job => ({ id: `K-${job.api_job_id}`, videoId: String(job.api_job_id), remoteJobId: String(job.api_job_id), userId: String(job.user_id), model: `Kling ${job.model}`, mode: 'Video generation', duration: `${job.duration_seconds}s`, aspectRatio: job.aspect_ratio || '9:16', resolution: job.resolution || '720p', creditsUsed: Number(job.credits_charged), status: job.status === 'success' ? 'completed' : job.status === 'failed' ? 'failed' : job.status === 'canceled' ? 'canceled' : 'processing', createdAt: new Date(job.created_at).toLocaleString(), dayBucket: 'today', prompt: job.prompt || '', videoUrl: job.video_url || '', error: job.error_code || '', userEmail: job.email }));
+        try { const overview = await backend('/api/admin/overview'); state.settings.apiWallet = overview.wallet; state.settings.apiWalletError = ''; state.settings.apiConnected = true; state.adminOverview = overview; }
+        catch (error) { state.settings.apiWallet = null; state.settings.apiWalletError = error.message; state.settings.apiConnected = false; state.adminOverview = null; }
+      }
+      return apiUser;
+    }
+
+    // =========================================================================
+    // TOAST & MODAL UTILITIES (Never use alert/confirm)
+    // =========================================================================
+    function showToast(title, message = '', type = 'success') {
+      const container = document.getElementById('toast-container');
+      const id = 'toast_' + Date.now() + Math.random().toString(36).slice(2, 6);
+      const colors = {
+        success: 'border-brand-500 bg-white text-slate-900',
+        error: 'border-red-500 bg-white text-slate-900',
+        warning: 'border-amber-500 bg-white text-slate-900',
+        info: 'border-sky-500 bg-white text-slate-900'
+      };
+      const iconBg = {
+        success: 'bg-brand-100 text-brand-700',
+        error: 'bg-red-100 text-red-700',
+        warning: 'bg-amber-100 text-amber-700',
+        info: 'bg-sky-100 text-sky-700'
+      };
+      const icons = { success: '✓', error: '!', warning: '⚠', info: 'i' };
+
+      const el = document.createElement('div');
+      el.id = id;
+      el.className = `pointer-events-auto rounded-2xl border-l-4 ${colors[type]} shadow-lg border border-slate-200/80 p-3.5 flex items-start gap-3 fade-in`;
+      el.innerHTML = `
+        <div class="w-6 h-6 rounded-full ${iconBg[type]} font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${icons[type]}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-bold text-slate-900">${title}</div>
+          ${message ? `<div class="text-xs text-slate-500 mt-0.5 leading-relaxed">${message}</div>` : ''}
+        </div>
+        <button onclick="document.getElementById('${id}')?.remove()" class="text-slate-400 hover:text-slate-600 text-xs">✕</button>
+      `;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4500);
+    }
+
+    function openModal(htmlContent) {
+      const root = document.getElementById('modal-root');
+      root.innerHTML = `
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden fade-in" onclick="event.stopPropagation()">
+          ${htmlContent}
+        </div>
+      `;
+      root.classList.remove('hidden');
+      root.classList.add('flex');
+      root.onclick = closeModal;
+    }
+
+    function closeModal() {
+      const root = document.getElementById('modal-root');
+      root.classList.add('hidden');
+      root.classList.remove('flex');
+      root.innerHTML = '';
+    }
+
+    function copyTextFallback(text, label = 'Copied to clipboard') {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(label, text.slice(0, 48) + (text.length > 48 ? '...' : ''));
+      } catch (err) {
+        showToast('Copy failed', 'Please select and copy manually.', 'error');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // =========================================================================
+    // NAVIGATION & SHELL UPDATING
+    // =========================================================================
+    const NAV_ITEMS = [
+      { id: 'home', label: 'Home', icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>` },
+      { id: 'create', label: 'Create video', icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>` },
+      { id: 'batches', label: 'Batches', icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 6h16M4 12h16M4 18h16"/>` },
+      { id: 'videos', label: 'My videos', icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>` },
+      { id: 'account', label: 'Account', icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>` },
+      { id: 'developer', label: 'API & Developer', icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>` },
+      { id: 'admin', label: 'Admin Panel', badge: 'ADMIN', icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>` }
+    ];
+
+    function navigate(routeId) {
+      if (routeId === 'admin' && getCurrentUser().role !== 'Owner / Admin') { showToast('Admin access required', 'Sign in with the administrator account to open this page.', 'error'); return; }
+      state.activeRoute = routeId;
+      saveState();
+      toggleMobileSidebar(false);
+      renderShell();
+      renderPage();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleMobileSidebar(open) {
+      const sb = document.getElementById('sidebar');
+      const bd = document.getElementById('mobile-backdrop');
+      if (open) {
+        sb.classList.remove('-translate-x-full');
+        bd.classList.remove('hidden');
+      } else {
+        sb.classList.add('-translate-x-full');
+        bd.classList.add('hidden');
+      }
+    }
+
+    function renderShell() {
+      const user = getCurrentUser();
+      const estVideos = 0;
+
+      // Brand texts
+      document.getElementById('sidebar-brand-name').textContent = state.settings.brandName;
+      document.getElementById('sidebar-brand-sub').textContent = state.settings.brandSubtitle;
+      document.getElementById('sidebar-wa-link').href = `https://wa.me/${WHATSAPP_NUMBER}`;
+
+      // Sidebar Nav
+      const navEl = document.getElementById('sidebar-nav');
+      navEl.innerHTML = NAV_ITEMS.filter(item => item.id !== 'admin' || user.role === 'Owner / Admin').map(item => {
+        const active = state.activeRoute === item.id;
+        return `
+          <a href="#${item.id}" onclick="navigate('${item.id}'); return false;"
+            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13.5px] font-medium transition ${
+              active
+                ? 'bg-brand-50 text-brand-700 font-semibold'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+            }">
+            <div class="flex items-center gap-3">
+              <svg class="w-[18px] h-[18px] ${active ? 'text-brand-600' : 'text-slate-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">${item.icon}</svg>
+              <span>${item.label}</span>
+            </div>
+            ${item.badge ? `<span class="text-[10px] font-extrabold tracking-wide px-1.5 py-0.5 rounded-md ${active ? 'bg-brand-600 text-white' : 'bg-brand-50 text-brand-700 border border-brand-200'}">${item.badge}</span>` : ''}
+          </a>
+        `;
+      }).join('');
+
+      // Credit Card & User Footer
+      document.getElementById('sidebar-credit-balance').textContent = `${user.credits.toLocaleString()} Credits`;
+      document.getElementById('sidebar-video-est').textContent = 'Live credit balance';
+      document.getElementById('sidebar-user-email').textContent = user.email;
+
+      const dot = document.getElementById('sidebar-approval-dot');
+      const sub = document.getElementById('sidebar-user-sub');
+      const headerPill = document.getElementById('header-approval-pill');
+
+      if (user.approved && !user.suspended) {
+        dot.className = 'w-2 h-2 rounded-full bg-brand-600';
+        sub.textContent = `${user.role} • Approved`;
+        headerPill.className = 'hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200';
+        headerPill.textContent = '✓ Approved Account';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500 pulse-dot';
+        sub.textContent = `${user.role} • Pending Approval`;
+        headerPill.className = 'hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200';
+        headerPill.textContent = '⏳ Pending Admin Approval';
+      }
+
+      // Header Breadcrumb & Toggle
+      const currentNav = NAV_ITEMS.find(n => n.id === state.activeRoute);
+      document.getElementById('header-page-title').textContent = currentNav ? currentNav.label : 'Home';
+
+      const uBtn = document.getElementById('toggle-user-view');
+      const aBtn = document.getElementById('toggle-admin-view');
+      aBtn.classList.toggle('hidden', user.role !== 'Owner / Admin');
+      if (state.activeRoute === 'admin') {
+        aBtn.className = 'px-2.5 py-1 rounded-lg bg-white text-brand-700 shadow-xs transition flex items-center gap-1';
+        uBtn.className = 'px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition';
+      } else {
+        uBtn.className = 'px-2.5 py-1 rounded-lg bg-white text-slate-900 shadow-xs transition';
+        aBtn.className = 'px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center gap-1';
+      }
+
+      // Admin pending badge count
+      const pendingApprovals = (user.role === 'Owner / Admin' ? state.users.filter(u => u.role !== 'Owner / Admin' && !u.approved).length : 0) + (user.role === 'Owner / Admin' ? state.creditRequests.filter(r => r.status === 'pending').length : 0);
+      const adminBadge = document.getElementById('admin-pending-badge');
+      if (pendingApprovals > 0) {
+        adminBadge.textContent = pendingApprovals;
+        adminBadge.classList.remove('hidden');
+      } else {
+        adminBadge.classList.add('hidden');
+      }
+
+      // Notifications
+      const unreadCount = state.notifications.filter(n => n.unread).length;
+      const notifBadge = document.getElementById('notif-badge');
+      if (unreadCount > 0) {
+        notifBadge.textContent = unreadCount;
+        notifBadge.classList.remove('hidden');
+      } else {
+        notifBadge.classList.add('hidden');
+      }
+      renderNotificationsList();
+    }
+
+    function toggleNotifications() {
+      const pop = document.getElementById('notif-popover');
+      pop.classList.toggle('hidden');
+    }
+
+    function markAllNotifsRead() {
+      state.notifications.forEach(n => n.unread = false);
+      saveState();
+      renderShell();
+    }
+
+    function renderNotificationsList() {
+      const list = document.getElementById('notif-list');
+      if (!list) return;
+      if (state.notifications.length === 0) {
+        list.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">No notifications</div>`;
+        return;
+      }
+      list.innerHTML = state.notifications.map(n => `
+        <div class="py-3 ${n.unread ? 'bg-brand-50/40 -mx-2 px-2 rounded-lg' : ''}">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-800">${n.title}</span>
+            <span class="text-[10px] text-slate-400">${n.time}</span>
+          </div>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">${n.body}</p>
+        </div>
+      `).join('');
+    }
+
+    function changeLanguage(lang) {
+      state.language = lang;
+      saveState();
+      showToast('Language Updated', `Interface locale set to ${lang}`);
+    }
+
+    // =========================================================================
+    // HELPER: CALCULATE DYNAMIC CREDIT COST
+    // =========================================================================
+    function getStudioCreditCost() {
+      const s = state.studio;
+      const p = state.pricing;
+      if (s.mainTab === 'motion') return Number(p.motion_control) || 30;
+      if (s.mainTab === 'omni') return Number(p.omni_reference) || 25;
+
+      const isFlash = s.model.includes('Flash');
+      if (s.duration === '5s') return isFlash ? Number(p.flash_5s) : Number(p.pro_5s);
+      if (s.duration === '15s') return isFlash ? Number(p.flash_15s) : Number(p.pro_15s);
+      return isFlash ? Number(p.flash_10s) : Number(p.pro_10s);
+    }
+
+    // =========================================================================
+    // PAGE 1: HOME DASHBOARD
+    // =========================================================================
+    function renderHomePage() {
+      const user = getCurrentUser();
+      const userBatches = (user.role === 'Owner / Admin' ? state.batches : state.batches.filter(b => String(b.userId) === String(user.id))).slice(0, 6);
+
+      return `
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Home</h1>
+            ${!user.approved ? `
+              <span class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-100 text-amber-800">Account pending admin approval</span>
+            ` : ''}
+          </div>
+
+          <!-- Top Greeting & Credit Balance Hero Card -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-7 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+              <div class="text-sm font-medium text-slate-500">Good afternoon,</div>
+              <div class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5 break-all">${user.email}!</div>
+              <div class="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-medium">
+                  <span class="w-2 h-2 rounded-full ${state.settings.apiConnected ? 'bg-brand-500' : 'bg-amber-500'}"></span>
+                  API Engine: ${state.settings.apiConnected ? 'Connected & Ready' : 'Standby'}
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 font-semibold">
+                  Live quote pricing
+                </span>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center gap-5 lg:gap-8 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+              <div>
+                <div class="text-xs font-medium text-slate-500">Credit balance</div>
+                <div class="flex items-baseline gap-2.5 mt-0.5">
+                  <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">${user.credits.toLocaleString()} Credits</span>
+                  <span class="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">Price shown before generation</span>
+                </div>
+                <button onclick="openTopUpModal()" class="mt-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer">
+                  Top up Credits →
+                </button>
+              </div>
+
+              <button onclick="navigate('create')" class="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-semibold text-sm shadow-sm shadow-brand-600/20 transition cursor-pointer shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
+                <span>Create a video from photos or text</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Recent Section -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-bold text-slate-900">Recent</h2>
+              <a href="#videos" onclick="navigate('videos'); return false;" class="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline">
+                View all
+              </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              ${userBatches.map(b => renderBatchCard(b)).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBatchCard(b) {
+      const isProcessing = b.status === 'processing';
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-4 hover:border-slate-300 transition flex flex-col justify-between gap-3 shadow-2xs">
+          <div>
+            <!-- Card Top Metadata Bar -->
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold text-slate-800">${b.id}</span>
+                <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${b.duration}</span>
+                ${!isProcessing ? `
+                  <button onclick="triggerVideoDownload('${b.videoId}', '${b.id}')" class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-700 hover:bg-brand-100 transition cursor-pointer">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download
+                  </button>
+                ` : ''}
+              </div>
+              ${isProcessing ? `
+                <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500 pulse-dot"></span>
+                  Creating 0/1
+                </span>
+              ` : `
+                <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
+                  OK 1/1
+                </span>
+              `}
+            </div>
+
+            <!-- Prompt Excerpt -->
+            <p class="text-xs text-slate-600 mt-3 line-clamp-2 leading-relaxed">
+              ${b.prompt}
+            </p>
+          </div>
+
+          <!-- Footer Row -->
+          <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between">
+            <button onclick="openVideoPreviewModal('${b.id}')" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-brand-700 transition cursor-pointer">
+              <span class="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center text-slate-600">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </span>
+              <span>1 video</span>
+            </button>
+            <span class="text-[11px] font-medium text-slate-400">${b.creditsUsed} Credits • ${b.model}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // PAGE 2: CREATE VIDEO STUDIO (3 MODES + LIVE SETTINGS + CREDIT DEDUCTION)
+    // =========================================================================
+    function renderCreateVideoPage() {
+      const s = state.studio;
+      const p = state.pricing;
+      const costPerVideo = getStudioCreditCost();
+      const validPrompts = s.prompts.filter(txt => txt.trim().length > 0);
+      const videoCount = s.mainTab === 'motion' || s.subTab === 'first_last' ? 1 : s.mainTab === 'standard' && studioFiles.images.length > 1 ? studioFiles.images.length : Math.max(1, s.prompts.length);
+      const totalCredits = costPerVideo * videoCount;
+
+      return `
+        <div class="space-y-5">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Create video</h1>
+            <div class="text-xs text-slate-500 font-medium">
+              Connected Model Engine: <span class="text-slate-800 font-semibold">${s.model}</span>
+            </div>
+          </div>
+
+          <!-- Top Mode Tabs -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 p-1.5 inline-flex flex-wrap gap-1 shadow-2xs">
+            <button onclick="setStudioMainTab('standard')" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${s.mainTab === 'standard' ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'text-slate-600 hover:bg-slate-50'}">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              <span>Standard video</span>
+            </button>
+
+            <button onclick="setStudioMainTab('motion')" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${s.mainTab === 'motion' ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'text-slate-600 hover:bg-slate-50'}">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+              <span>Motion Control</span>
+              <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-brand-600 text-white">NEW</span>
+            </button>
+
+            <button onclick="setStudioMainTab('omni')" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${s.mainTab === 'omni' ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'text-slate-600 hover:bg-slate-50'}">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <span>Omni Reference</span>
+              <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-brand-600 text-white">NEW</span>
+            </button>
+          </div>
+
+          <!-- Two-Column Studio Workspace -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- LEFT COLUMN: Inputs & Prompts (8 cols) -->
+            <div class="lg:col-span-8 space-y-5">
+              
+              <!-- Mode Specific Upload Card -->
+              <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-4">
+                ${s.mainTab === 'standard' ? `
+                  <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                      <button onclick="setStudioSubTab('image_to_video')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${s.subTab === 'image_to_video' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                        Image → Video
+                      </button>
+                      <button onclick="setStudioSubTab('first_last')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${s.subTab === 'first_last' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                        First frame – Last frame
+                      </button>
+                    </div>
+                    <button onclick="openUserGuideModal()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg transition cursor-pointer">
+                      <span>📘 User guide</span>
+                    </button>
+                  </div>
+
+                  <p class="text-xs text-slate-500">Create dozens or hundreds of videos in parallel at once to save your time.</p>
+
+                  ${s.subTab === 'image_to_video' ? `
+                    <label class="block border-2 border-dashed ${s.uploadedImageName ? 'border-brand-500 bg-brand-50/30' : 'border-slate-200 hover:border-brand-400 bg-slate-50/50'} rounded-2xl p-8 text-center cursor-pointer transition">
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple class="hidden" onchange="handleStudioFileUpload(event, 'image')" />
+                      <div class="w-11 h-11 rounded-xl bg-white border border-slate-200 shadow-2xs mx-auto flex items-center justify-center text-brand-600 mb-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                      </div>
+                      ${s.uploadedImageName ? `
+                        <div class="text-sm font-bold text-brand-700">✓ Loaded: ${s.uploadedImageName}</div>
+                        <div class="text-xs text-slate-500 mt-1">Click to replace or add image files</div>
+                      ` : `
+                        <div class="text-sm font-semibold text-slate-800">Choose or drag & drop photos here</div>
+                        <div class="text-xs text-slate-400 mt-1">Optional: JPG, PNG, WebP • Select multiple photos for batch creation</div>
+                      `}
+                    </label>
+                    <div class="text-xs text-slate-400 text-center">Or type a prompt below to create a video from a description. You can also add one or more images for image-to-video.</div>
+                  ` : `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <label class="border-2 border-dashed ${s.firstFrameSet ? 'border-brand-500 bg-brand-50/40' : 'border-slate-200 hover:border-brand-400 bg-slate-50/50'} rounded-2xl p-7 text-center cursor-pointer transition"><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" onchange="handleStudioFileUpload(event, 'first')"><div class="w-10 h-10 rounded-full bg-white border border-slate-200 mx-auto flex items-center justify-center text-brand-600 font-bold mb-2">+</div><div class="text-sm font-semibold text-slate-800">${studioFiles.first ? `✓ ${studioFiles.first.name}` : '+ First frame'}</div><div class="text-xs text-slate-400 mt-1">Choose the starting image</div></label>
+                      <label class="border-2 border-dashed ${s.lastFrameSet ? 'border-brand-500 bg-brand-50/40' : 'border-slate-200 hover:border-brand-400 bg-slate-50/50'} rounded-2xl p-7 text-center cursor-pointer transition"><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" onchange="handleStudioFileUpload(event, 'last')"><div class="w-10 h-10 rounded-full bg-white border border-slate-200 mx-auto flex items-center justify-center text-brand-600 font-bold mb-2">+</div><div class="text-sm font-semibold text-slate-800">${studioFiles.last ? `✓ ${studioFiles.last.name}` : '+ Last frame'}</div><div class="text-xs text-slate-400 mt-1">Choose the ending image</div></label>
+                    </div>
+                  `}
+                ` : ''}
+
+                ${s.mainTab === 'motion' ? `
+                  <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-1 rounded-md">STEP 1 — Sample motion video</span>
+                      <span class="text-xs text-slate-400">Up to 100 videos (MP4/MOV/WebM, 2.5–13 seconds)</span>
+                    </div>
+                    <label class="block border-2 border-dashed ${s.motionVideoName ? 'border-brand-500 bg-brand-50/30' : 'border-slate-200 hover:border-brand-400 bg-slate-50/50'} rounded-2xl p-6 text-center cursor-pointer transition">
+                      <input type="file" accept="video/mp4,video/quicktime,video/webm" multiple class="hidden" onchange="handleStudioFileUpload(event, 'motion')" />
+                      <div class="text-sm font-semibold text-slate-800">${studioFiles.motion.length ? `✓ ${studioFiles.motion.length} sample video(s): ${studioFiles.motion.map(file=>file.name).join(', ')}` : 'Choose or drop sample video(s)'}</div>
+                      <div class="text-xs text-slate-400 mt-1">MP4, MOV (up to 100MB, 2.5s – 13.0s)</div>
+                    </label>
+
+                    <div class="flex items-center justify-between pt-2">
+                      <span class="text-xs font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-1 rounded-md">STEP 2 — Character photo</span>
+                      <span class="text-xs text-slate-400">Up to 100 Character images</span>
+                    </div>
+                    <label class="block border-2 border-dashed ${s.characterPhotoName ? 'border-brand-500 bg-brand-50/30' : 'border-slate-200 hover:border-brand-400 bg-slate-50/50'} rounded-2xl p-6 text-center cursor-pointer transition">
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple class="hidden" onchange="handleStudioFileUpload(event, 'character')" />
+                      <div class="text-sm font-semibold text-slate-800">${studioFiles.character.length ? `✓ ${studioFiles.character.length} character photo(s): ${studioFiles.character.map(file=>file.name).join(', ')}` : 'Choose or drag & drop character photo(s)'}</div>
+                      <div class="text-xs text-slate-400 mt-1">JPG, PNG, WebP • Clear face and body pose</div>
+                    </label>
+                  </div>
+                ` : ''}
+
+                ${s.mainTab === 'omni' ? `
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-700">Reference Photos (Subject, Outfit, Background)</span>
+                      <span class="text-xs font-semibold text-brand-700">${studioFiles.omni.length} / 10 photos</span>
+                    </div>
+              <label class="block border-2 border-dashed ${studioFiles.omni.length > 0 ? 'border-brand-500 bg-brand-50/30' : 'border-slate-200 hover:border-brand-400 bg-slate-50/50'} rounded-2xl p-8 text-center cursor-pointer transition"><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple class="hidden" onchange="handleStudioFileUpload(event, 'omni')"><div class="text-sm font-semibold text-slate-800">${studioFiles.omni.length ? `✓ ${studioFiles.omni.length} reference photo(s): ${studioFiles.omni.map(f=>f.name).join(', ')}` : 'Choose reference photos'}</div><div class="text-xs text-slate-400 mt-1">Up to 10 real reference images are securely shared with each prompt.</div></label>
+                  </div>
+                ` : ''}
+              </div>
+
+              <!-- Prompt Builder Card -->
+              <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-4">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-semibold text-slate-500">${s.prompts.length} prompt • ${videoCount} video</span>
+                  <button onclick="usePreviousPrompt()" class="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer">
+                    Use the previous prompt
+                  </button>
+                </div>
+
+                <div class="space-y-3">
+                  ${s.prompts.map((pText, idx) => `
+                    <div class="rounded-xl border border-slate-200 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/15 p-3.5 transition bg-white">
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-700">Prompt ${idx + 1}</span>
+                        <div class="flex items-center gap-2">
+                          <button onclick="clearPrompt(${idx})" class="text-xs text-slate-400 hover:text-slate-700 cursor-pointer">Clear</button>
+                          ${s.prompts.length > 1 ? `<button onclick="removePrompt(${idx})" class="text-xs text-red-400 hover:text-red-600 cursor-pointer">Remove</button>` : ''}
+                        </div>
+                      </div>
+                      <textarea
+                        rows="3"
+                        oninput="updatePromptText(${idx}, this.value)"
+                        placeholder="e.g. Slow camera tilt upwards, soft light..."
+                        class="w-full text-sm text-slate-800 placeholder-slate-400 focus:outline-none resize-none"
+                      >${pText}</textarea>
+                      <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-400">
+                        <span>${s.mainTab === 'omni' ? 'Type @ to insert a reference photo quickly.' : 'Each prompt creates its own video.'}</span>
+                        <span id="prompt-char-${idx}">${(30000 - pText.length).toLocaleString()} left</span>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+
+                ${s.mainTab !== 'motion' ? `
+                  <button onclick="addPromptBox()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 hover:border-brand-500 hover:text-brand-700 text-xs font-semibold text-slate-700 transition cursor-pointer">
+                    <span>+ Add prompt</span>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Settings & Credit Checkout (4 cols) -->
+            <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5 sticky top-20">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h2 class="text-base font-bold text-slate-900">Settings</h2>
+                    <span class="text-[11px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md">Provider wallet</span>
+              </div>
+
+              ${s.mainTab === 'motion' ? `
+                <!-- Motion Control Settings -->
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Model</label>
+                    <div class="flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-800">
+                      <span>Kling 2.6 (720p)</span>
+                      <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-brand-100 text-brand-700">MOTION CONTROL</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Framing</label>
+                    <select onchange="updateStudioSetting('framing', this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:border-brand-500">
+                      <option value="Full body" ${s.framing === 'Full body' ? 'selected' : ''}>Full body</option>
+                      <option value="Half body" ${s.framing === 'Half body' ? 'selected' : ''}>Half body</option>
+                      
+                    </select>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-1">
+                    <div>
+                      <div class="text-xs font-semibold text-slate-700">Keep original sound</div>
+                      <div class="text-[11px] text-slate-400">Sample video audio</div>
+                    </div>
+                    <button onclick="updateStudioSetting('keepSampleAudio', !state.studio.keepSampleAudio)" class="w-11 h-6 rounded-full transition p-0.5 cursor-pointer ${s.keepSampleAudio ? 'bg-brand-600' : 'bg-slate-300'}">
+                      <div class="w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${s.keepSampleAudio ? 'translate-x-5' : 'translate-x-0'}"></div>
+                    </button>
+                  </div>
+                </div>
+              ` : `
+                <!-- Standard & Omni Settings -->
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Model</label>
+                    <select onchange="updateStudioSetting('model', this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 bg-white focus:outline-none focus:border-brand-500">
+                      ${(klingPriceRules.filter(rule => rule.enabled && !rule.motionControl && Boolean(rule.tailImage) === (s.mainTab === 'standard' && s.subTab === 'first_last') && (s.mainTab !== 'omni' || (rule.model === '4.0-flash' && rule.durationSeconds === 11 && rule.resolution === '720p')) && (studioFiles.images.length > 0 || s.mainTab !== 'standard' || s.subTab !== 'image_to_video' || rule.textToVideo)).map(rule => rule.model).filter((model, index, all) => all.indexOf(model) === index).map(model => `<option value="${model}" ${s.model === model ? 'selected' : ''}>Kling ${model}${s.mainTab === 'omni' ? ' · Omni' : ''}</option>`).join('')) || `<option value="${s.model}">Kling ${s.model}</option>`}
+                    </select>
+                    <div class="flex items-center justify-between text-[11px] mt-1.5">
+                      <span class="font-semibold text-slate-700">${s.mainTab === 'omni' ? 'Live API price' : 'Live price shown before charge'}</span>
+                      <span class="text-brand-600 font-medium">${s.mainTab === 'omni' ? `${Number(getOmniPriceRule()?.amount || 0).toLocaleString()}đ / video` : (s.model.includes('Flash') ? 'Fastest up to now' : 'High cinematic fidelity')}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Duration</label>
+                    <select onchange="updateStudioSetting('duration', this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:border-brand-500">
+                      ${s.mainTab === 'omni' ? `<option value="11s" selected>11s — ${Number(getOmniPriceRule()?.amount || 0).toLocaleString()}đ</option>` : ((klingPriceRules.filter(rule => rule.enabled && rule.model === s.model && rule.resolution === s.resolution && !rule.motionControl && Boolean(rule.tailImage) === (s.mainTab === 'standard' && s.subTab === 'first_last') && (studioFiles.images.length > 0 || s.mainTab !== 'standard' || s.subTab !== 'image_to_video' || rule.textToVideo)).map(rule => rule.durationSeconds).filter((duration, index, all) => all.indexOf(duration) === index).sort((a,b) => a-b).map(duration => `<option value="${duration}s" ${Number.parseInt(s.duration, 10) === duration ? 'selected' : ''}>${duration}s</option>`).join('')) || `<option value="${s.duration}">${s.duration}</option>`)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Aspect ratio</label>
+                    <select onchange="updateStudioSetting('aspectRatio', this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:border-brand-500">
+                      <option value="9:16 portrait" ${s.aspectRatio === '9:16 portrait' ? 'selected' : ''}>9:16 portrait</option>
+                      <option value="16:9 landscape" ${s.aspectRatio === '16:9 landscape' ? 'selected' : ''}>16:9 landscape</option>
+                      <option value="1:1" ${s.aspectRatio === '1:1' ? 'selected' : ''}>1:1</option>
+                      <option value="21:9" ${s.aspectRatio === '21:9' ? 'selected' : ''}>21:9</option>
+                      <option value="Auto" ${s.aspectRatio === 'Auto' ? 'selected' : ''}>Auto</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Resolution</label>
+                    <select onchange="updateStudioSetting('resolution', this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:border-brand-500">
+                      ${[...new Set(klingPriceRules.filter(rule => rule.enabled && rule.model === s.model && rule.durationSeconds === Number.parseInt(s.duration, 10) && !rule.motionControl && Boolean(rule.tailImage) === (s.mainTab === 'standard' && s.subTab === 'first_last') && (studioFiles.images.length > 0 || s.mainTab !== 'standard' || s.subTab !== 'image_to_video' || rule.textToVideo)).map(rule => rule.resolution))].map(res => `<option value="${res}" ${s.resolution === res ? 'selected' : ''}>${res}</option>`).join('') || `<option value="${s.resolution}">${s.resolution}</option>`}
+                    </select>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-1">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-semibold text-slate-700">Audio</span>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${s.mainTab === 'omni' || isStudioAudioAvailable() ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}">${s.mainTab === 'omni' ? 'Voice on by default' : (isStudioAudioAvailable() ? 'Free' : 'Unavailable')}</span>
+                    </div>
+                    <button ${s.mainTab === 'omni' ? 'disabled title="Omni uses the voice behavior included with this model."' : (isStudioAudioAvailable() ? '' : 'disabled title="No audio option is enabled for these settings."')} onclick="updateStudioSetting('audio', !state.studio.audio)" class="w-11 h-6 rounded-full transition p-0.5 ${s.mainTab === 'omni' || isStudioAudioAvailable() ? 'cursor-default' : 'opacity-50 cursor-not-allowed'} ${s.audio ? 'bg-brand-600' : 'bg-slate-300'}">
+                      <div class="w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${s.audio ? 'translate-x-5' : 'translate-x-0'}"></div>
+                    </button>
+                  </div>
+                </div>
+              `}
+
+              <!-- Checkout Summary & Continue CTA -->
+              <div class="pt-4 border-t border-slate-100 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-600 font-medium">${videoCount} video(s)</span>
+                  <span class="text-base font-extrabold text-slate-900">Quote first</span>
+                </div>
+                <div class="text-[11px] text-slate-400">Estimated generation time: about 2 min</div>
+
+                <button onclick="submitVideoGeneration()" class="w-full py-3.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold text-sm shadow-sm shadow-brand-600/20 transition cursor-pointer">
+                  Get live quote
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Studio Actions
+    function selectCompatiblePriceRule() {
+      const s = state.studio;
+      const wantsTail = s.mainTab === 'standard' && s.subTab === 'first_last';
+      const wantsText = s.mainTab === 'standard' && s.subTab === 'image_to_video' && studioFiles.images.length === 0;
+      const wantedModel = s.mainTab === 'motion' ? '2.6' : s.model;
+      const omniRule = s.mainTab === 'omni' ? getOmniPriceRule() : null;
+      const rule = omniRule || klingPriceRules.find(item => item.enabled && item.model === wantedModel && Boolean(item.tailImage) === wantsTail && Boolean(item.motionControl) === (s.mainTab === 'motion') && (!wantsText || item.textToVideo) && (s.mainTab !== 'motion' || item.resolution === '720p'))
+        || klingPriceRules.find(item => item.enabled && Boolean(item.tailImage) === wantsTail && Boolean(item.motionControl) === (s.mainTab === 'motion') && (!wantsText || item.textToVideo));
+      if (rule) { s.model = rule.model; s.duration = `${rule.durationSeconds}s`; s.resolution = rule.resolution; s.audio = s.mainTab === 'omni' ? true : Boolean(rule.audio); if (rule.aspectRatio !== '*') s.aspectRatio = rule.aspectRatio; }
+    }
+    function setStudioMainTab(tab) {
+      state.studio.mainTab = tab;
+      selectCompatiblePriceRule();
+      saveState();
+      renderPage();
+    }
+    function setStudioSubTab(sub) {
+      state.studio.subTab = sub;
+      selectCompatiblePriceRule();
+      saveState();
+      renderPage();
+    }
+    function updateStudioSetting(key, val) {
+      const s = state.studio;
+      const next = { model: s.model, durationSeconds: Number.parseInt(s.duration, 10), resolution: s.resolution, audio: Boolean(s.audio), tailImage: s.mainTab === 'standard' && s.subTab === 'first_last', motionControl: s.mainTab === 'motion' };
+      if (key === 'audio') next.audio = Boolean(val);
+      if (key === 'model') next.model = val;
+      if (key === 'duration') next.durationSeconds = Number.parseInt(val, 10);
+      if (key === 'resolution') next.resolution = val;
+      if (['audio','model','duration','resolution'].includes(key) && !klingPriceRules.some(rule => rule.enabled && rule.model === next.model && rule.durationSeconds === next.durationSeconds && rule.resolution === next.resolution && Boolean(rule.audio) === next.audio && Boolean(rule.tailImage) === next.tailImage && Boolean(rule.motionControl) === next.motionControl)) {
+        if (key === 'audio') return showToast('Audio not available for this model', 'Choose an audio option supported by the live model price list.', 'warning');
+        s.audio = false;
+        const backup = klingPriceRules.find(rule => rule.enabled && rule.model === next.model && Boolean(rule.tailImage) === next.tailImage && Boolean(rule.motionControl) === next.motionControl);
+        if (backup) { s.duration = `${backup.durationSeconds}s`; s.resolution = backup.resolution; s.audio = Boolean(backup.audio); }
+      }
+      s[key] = val;
+      saveState();
+      renderPage();
+    }
+    function updatePromptText(idx, val) {
+      state.studio.prompts[idx] = val;
+      const counter = document.getElementById(`prompt-char-${idx}`);
+      if (counter) counter.textContent = `${(30000 - val.length).toLocaleString()} left`;
+      saveState();
+    }
+    function addPromptBox() {
+      state.studio.prompts.push('');
+      saveState();
+      renderPage();
+    }
+    function removePrompt(idx) {
+      state.studio.prompts.splice(idx, 1);
+      saveState();
+      renderPage();
+    }
+    function clearPrompt(idx) {
+      state.studio.prompts[idx] = '';
+      saveState();
+      renderPage();
+    }
+    function usePreviousPrompt() {
+      state.studio.prompts[0] = state.studio.lastUsedPrompt;
+      saveState();
+      renderPage();
+      showToast('Previous prompt inserted');
+    }
+    function handleStudioFileUpload(e, kind) {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      if (kind === 'image') { studioFiles.images = files; state.studio.uploadedImageName = files.map(file => file.name).join(', '); }
+      else if (kind === 'omni') {
+        if (files.length > 10) { e.target.value = ''; return showToast('Too many reference photos', 'Omni Reference accepts up to 10 images.', 'error'); }
+        studioFiles.omni = files; state.studio.omniRefsCount = files.length;
+      } else if (kind === 'motion' || kind === 'character') {
+        studioFiles[kind] = files;
+        if (kind === 'motion') state.studio.motionVideoName = files.map(file=>file.name).join(', ');
+        if (kind === 'character') state.studio.characterPhotoName = files.map(file=>file.name).join(', ');
+      } else {
+        studioFiles[kind] = files[0];
+        if (kind === 'first') { state.studio.firstFrameSet = true; state.studio.firstFrameName = files[0].name; }
+        if (kind === 'last') { state.studio.lastFrameSet = true; state.studio.lastFrameName = files[0].name; }
+      }
+      renderPage();
+      showToast('File attached', `${files.length} file(s) ready for upload.`);
+    }
+    async function uploadStudioFiles(files) {
+      const uploadedKeys = [];
+      for (let offset = 0; offset < files.length; offset += 50) {
+        const group = files.slice(offset, offset + 50);
+        const initialized = await backend('/api/uploads/init', { method: 'POST', body: JSON.stringify({ files: group.map(file => ({ filename: file.name, contentType: file.type || (file.name.toLowerCase().endsWith('.mov') ? 'video/quicktime' : 'application/octet-stream'), sizeBytes: file.size })) }) });
+        const items = initialized.items || [];
+        if (items.length !== group.length) throw new Error('The upload service did not return a URL for every selected file.');
+        await Promise.all(items.map(async (item, index) => {
+          const uploaded = await fetch(item.uploadUrl, { method: 'PUT', headers: { 'Content-Type': item.contentType }, body: group[index] });
+          if (!uploaded.ok) throw new Error(`Upload failed for ${group[index].name} (${uploaded.status}).`);
+        }));
+        await backend('/api/uploads/complete', { method: 'POST', body: JSON.stringify({ items: items.map(item => ({ objectKey: item.objectKey })) }) });
+        uploadedKeys.push(...items.map(item => item.objectKey));
+      }
+      return uploadedKeys;
+    }
+
+    async function submitVideoGeneration() {
+      const s = state.studio;
+      const prompts = s.prompts.map(value => value.trim()).filter(Boolean);
+      if (!prompts.length) return showToast('Add a prompt', 'Enter at least one video description.', 'error');
+      const settings = klingSettings();
+      let uploadFiles = [];
+      let quoteBody = { settings, imageCount: 1 };
+      let mode = s.mainTab;
+      if (mode === 'standard' && s.subTab === 'first_last') {
+        if (!studioFiles.first || !studioFiles.last) return showToast('Add both frames', 'Choose the first-frame and last-frame images before continuing.', 'error');
+        if (prompts.length !== 1) return showToast('One prompt required', 'First frame–last frame mode creates one video per quote.', 'error');
+        mode = 'first_last'; uploadFiles = [studioFiles.first, studioFiles.last]; quoteBody = { settings, imageCount: 1, tailImage: true };
+      } else if (s.mainTab === 'motion') {
+        if (!studioFiles.motion.length || !studioFiles.character.length) return showToast('Add the motion inputs', 'Choose at least one sample video and one character photo.', 'error');
+        if (studioFiles.motion.length > 1 && studioFiles.character.length > 1) return showToast('Choose one input group', 'Select one sample video with multiple characters, or one character with multiple sample videos.', 'error');
+        if (studioFiles.motion.length > 100 || studioFiles.character.length > 100) return showToast('Too many motion inputs', 'Motion Control accepts at most 100 videos or character photos per batch.', 'error');
+        if (prompts.length !== 1) return showToast('One prompt required', 'Motion Control creates one job for this sample and character.', 'error');
+        mode = 'motion'; settings.model = '2.6'; settings.resolution = '720p';
+        uploadFiles = [...studioFiles.motion, ...studioFiles.character];
+        quoteBody = { settings, imageCount: studioFiles.character.length, motionVideoCount: studioFiles.motion.length, motionControl: true };
+      } else if (s.mainTab === 'omni') {
+        if (!studioFiles.omni.length) return showToast('Add reference photos', 'Choose 1 to 10 real reference photos.', 'error');
+        mode = 'omni'; uploadFiles = studioFiles.omni;
+        quoteBody = { settings, imageCount: studioFiles.omni.length, omniReference: true, promptCount: prompts.length, prompts };
+      } else {
+        const images = studioFiles.images;
+        if (images.length > 100) return showToast('Too many images', 'Choose up to 100 images per batch.', 'error');
+        if (!images.length) {
+          const rule = klingPriceRules.find(item => item.enabled && item.model === settings.model && item.durationSeconds === settings.durationSeconds && item.resolution === settings.resolution && Boolean(item.audio) === Boolean(settings.audio) && item.textToVideo && !item.motionControl && !item.tailImage);
+          if (!rule) return showToast('Prompt-only generation unavailable for this model', 'Choose a model and duration that the live API marks as Text-to-Video capable.', 'error');
+          quoteBody = { settings, imageCount: 1, textToVideo: true, ...(prompts.length > 1 ? { promptCount: prompts.length, prompts } : {}) };
+          mode = 'text_to_video';
+        } else {
+      if (images.length > 1 && prompts.length !== 1) return showToast('Use one prompt for image batches', 'Several images with several prompts is not supported by the current video service. Use one image with multiple prompts instead.', 'error');
+          uploadFiles = images;
+          quoteBody = images.length === 1 && prompts.length > 1
+            ? { settings, imageCount: 1, jobType: 'image_to_video', promptCount: prompts.length, prompts }
+            : { settings, imageCount: images.length };
+        }
+      }
+      try {
+        const objectKeys = await uploadStudioFiles(uploadFiles);
+        const quote = await backend('/api/quote', { method: 'POST', body: JSON.stringify(quoteBody) });
+        pendingKlingRequest = { quote, settings, prompts, objectKeys, mode, motionCount: s.mainTab === 'motion' ? studioFiles.motion.length : 0, keepSampleAudio: Boolean(s.keepSampleAudio), framing: s.framing };
+        const count = Number(quote.jobCount || quote.imageCount || prompts.length || 1);
+        openModal(`<div class="p-6 space-y-4"><h3 class="text-lg font-bold">Confirm video generation</h3><p class="text-sm text-slate-600">${count} video(s), estimated provider charge <strong>${Number(quote.totalAmount).toLocaleString()} ${quote.currency || 'VND'}</strong>.</p><p class="text-xs text-slate-500">This job will use ${Number(quote.creditsRequired).toLocaleString()} Zahid AI credits. Your linked generation wallet is charged separately.</p><div class="flex justify-end gap-2"><button onclick="closeModal(); pendingKlingRequest=null" class="px-4 py-2 rounded-xl border text-sm">Cancel</button><button onclick="confirmKlingGeneration()" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-bold">Create and charge</button></div></div>`);
+      } catch (error) { const message = mode === 'omni' && error.code === 'NO_PRICE_RULE' ? 'Omni Reference has no active price rule on the linked video account. No credits or wallet balance were charged.' : error.message; showToast('Could not get quote', message, 'error'); }
+    }
+
+    async function confirmKlingGeneration() {
+      const pending = pendingKlingRequest;
+      if (!pending) return;
+      pendingKlingRequest = null;
+      closeModal();
+      const body = { quoteId: pending.quote.quoteId, settings: pending.settings, expectedTotal: pending.quote.totalAmount };
+      if (pending.mode === 'motion') { const characterKeys = pending.objectKeys.slice(pending.motionCount); const videoKeys = pending.objectKeys.slice(0, pending.motionCount); Object.assign(body, { jobType: 'motion_control', imageKeys: characterKeys, ...(videoKeys.length === 1 ? { motionVideoObjectKey: videoKeys[0] } : { motionVideoObjectKeys: videoKeys }), motionCharacterOrientation: pending.framing === 'Half body' ? 'HALF' : 'FULL', keepOriginalSound: pending.keepSampleAudio, prompt: pending.prompts[0] }); }
+      else if (pending.mode === 'omni') Object.assign(body, { jobType: 'omni_reference', omniReference: true, imageKeys: pending.objectKeys, prompts: pending.prompts });
+      else if (pending.mode === 'first_last') Object.assign(body, { imageKeys: [pending.objectKeys[0]], endFrameKey: pending.objectKeys[1], prompt: pending.prompts[0] });
+      else if (pending.mode === 'text_to_video') Object.assign(body, { jobType: 'text_to_video', ...(pending.prompts.length > 1 ? { prompts: pending.prompts } : { prompt: pending.prompts[0] }) });
+      else if (pending.prompts.length > 1) Object.assign(body, { jobType: 'image_to_video', imageKeys: [pending.objectKeys[0]], prompts: pending.prompts });
+      else Object.assign(body, { imageKeys: pending.objectKeys, prompt: pending.prompts[0] });
+      try {
+        const created = await backend('/api/batches', { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify(body) });
+        for (const [index, job] of (created.jobs || []).entries()) {
+          const jobId = job.jobId || job.id;
+          const item = { id: `K-${jobId}`, videoId: String(jobId), remoteJobId: jobId, userId: getCurrentUser().id, model: pending.settings.model, mode: pending.mode === 'motion' ? 'Motion Control' : pending.mode === 'omni' ? 'Omni Reference' : pending.mode === 'first_last' ? 'First and Last Frame' : pending.mode === 'text_to_video' ? 'Text to Video' : 'Image to Video', duration: `${pending.settings.durationSeconds}s`, aspectRatio: pending.settings.aspectRatio, resolution: pending.settings.resolution, creditsUsed: Math.floor(Number(created.creditsCharged || pending.quote.creditsRequired) / (created.jobs.length || 1)), status: 'processing', createdAt: new Date().toLocaleString(), dayBucket: 'today', prompt: pending.prompts[index] || pending.prompts[0], videoUrl: '' };
+          state.batches.unshift(item);
+          pollKlingJob(item);
+        }
+        state.studio.lastUsedPrompt = pending.prompts[0];
+        const activeUser = state.users.find(user => String(user.id) === String(getCurrentUser().id));
+        if (activeUser && Number.isFinite(Number(created.creditsRemaining))) activeUser.credits = Number(created.creditsRemaining);
+        showToast('Video generation started', `${(created.jobs || []).length} job(s) created. Charge: ${Number(created.creditsCharged ?? pending.quote.creditsRequired).toLocaleString()} credits.`);
+        navigate('batches');
+      } catch (error) { showToast('Generation failed', error.message, 'error'); }
+    }
+
+    async function pollKlingJob(item) {
+      const terminal = new Set(['success', 'failed', 'canceled']);
+      while (true) {
+        try {
+          const job = await backend(`/api/jobs/${item.remoteJobId}`);
+          item.model = job.model || item.model;
+          item.etaMs = job.etaMs || 0;
+          item.status = job.status === 'success' ? 'completed' : job.status === 'failed' ? 'failed' : job.status === 'canceled' ? 'canceled' : 'processing';
+          item.error = job.errorCode || '';
+          if (job.status === 'success') { const video = await backend(`/api/jobs/${item.remoteJobId}/video-url`); item.videoUrl = video.url || ''; }
+          item.pollError = '';
+          saveState();
+          if (state.activeRoute === 'batches' || state.activeRoute === 'videos' || state.activeRoute === 'home') renderPage();
+          if (terminal.has(job.status)) break;
+        } catch (error) {
+          item.pollError = error.message;
+          saveState();
+          if (state.activeRoute === 'batches' || state.activeRoute === 'videos') renderPage();
+          console.warn('Kling job status check failed:', error.message);
+        }
+        // Check at the fast end of the upstream docs' 5–10 second polling range.
+        // This updates visible progress sooner; the provider controls render time.
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
+
+    // =========================================================================
+    // PAGE 3: BATCHES
+    // =========================================================================
+    function renderBatchesPage() {
+      const user = getCurrentUser();
+      const userBatches = user.role === 'Owner / Admin' ? state.batches : state.batches.filter(b => String(b.userId) === String(user.id));
+      const filtered = userBatches.filter(b => {
+        if (state.batchFilterStatus !== 'all' && b.status !== state.batchFilterStatus) return false;
+        if (state.batchFilterDate === 'today' && b.dayBucket !== 'today') return false;
+        return true;
+      });
+
+      const tabs = [
+        { id: 'all', label: 'All' },
+        { id: 'processing', label: 'In progress' },
+        { id: 'completed', label: 'Completed' },
+        { id: 'failed', label: 'Failed' },
+        { id: 'canceled', label: 'Canceled' }
+      ];
+
+      return `
+        <div class="space-y-5">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Video batches</h1>
+              <p class="text-xs text-slate-500 mt-1">Track progress and download the batches you already created.</p>
+            </div>
+            <button onclick="navigate('create')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition cursor-pointer">
+              <span>+ Create video</span>
+            </button>
+          </div>
+
+          <!-- Filter Bar -->
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              ${tabs.map(t => `
+                <button onclick="setBatchFilter('status', '${t.id}')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                  state.batchFilterStatus === t.id
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }">
+                  ${t.label}
+                </button>
+              `).join('')}
+            </div>
+
+            <select onchange="setBatchFilter('date', this.value)" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none">
+              <option value="last3" ${state.batchFilterDate === 'last3' ? 'selected' : ''}>Last 3 days</option>
+              <option value="today" ${state.batchFilterDate === 'today' ? 'selected' : ''}>Today</option>
+              <option value="any" ${state.batchFilterDate === 'any' ? 'selected' : ''}>Any time</option>
+            </select>
+          </div>
+
+          ${filtered.length === 0 ? `
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-14 text-center space-y-3">
+              <div class="text-base font-bold text-slate-800">No batches match these filters</div>
+              <p class="text-xs text-slate-500">Clear the filters to see all batches.</p>
+              <button onclick="setBatchFilter('reset')" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer">
+                Clear filters
+              </button>
+            </div>
+          ` : `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${filtered.map(b => `
+                <div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 hover:border-slate-300 transition space-y-3 shadow-2xs">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-400 font-medium">${b.createdAt}</span>
+                      <span class="text-xs font-bold text-slate-900">${b.id}</span>
+                      <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${b.duration}</span>
+                    </div>
+                    ${b.status === 'processing' ? `
+                      <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 pulse-dot"></span>
+                        Creating 0/1
+                      </span>
+                    ` : `
+                      <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
+                        OK 1/1
+                      </span>
+                    `}
+                  </div>
+
+                  ${b.videoUrl ? `<video controls preload="metadata" class="w-full max-h-64 rounded-xl bg-slate-950" src="${b.videoUrl}"></video>` : `<p class="text-xs text-slate-700 leading-relaxed line-clamp-2">${b.prompt}</p>`}
+                  ${b.pollError ? `<p class="text-xs text-red-600">Status check: ${b.pollError}</p>` : ''}
+
+                  <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-3 text-slate-500 font-medium">
+                      <span>1 match • 1 total</span>
+                      <span>•</span>
+                      <span>${b.creditsUsed} Credits</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button onclick="openVideoPreviewModal('${b.id}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition cursor-pointer">
+                        Inspect
+                      </button>
+                      ${b.status === 'completed' ? `
+                        <button onclick="triggerVideoDownload('${b.videoId}', '${b.id}')" class="px-2.5 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold transition cursor-pointer">
+                          Download
+                        </button>
+                      ` : ''}
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function setBatchFilter(kind, val) {
+      if (kind === 'reset') {
+        state.batchFilterStatus = 'all';
+        state.batchFilterDate = 'last3';
+      } else if (kind === 'status') {
+        state.batchFilterStatus = val;
+      } else if (kind === 'date') {
+        state.batchFilterDate = val;
+      }
+      saveState();
+      renderPage();
+    }
+
+    // =========================================================================
+    // PAGE 4: MY VIDEOS
+    // =========================================================================
+    function renderMyVideosPage() {
+      const user = getCurrentUser();
+      const userBatches = user.role === 'Owner / Admin' ? state.batches : state.batches.filter(b => String(b.userId) === String(user.id));
+      const filtered = userBatches.filter(b => {
+        if (state.videoFilterStatus !== 'all' && b.status !== state.videoFilterStatus) return false;
+        if (state.videoFilterDate === 'today' && b.dayBucket !== 'today') return false;
+        return true;
+      });
+
+      const tabs = [
+        { id: 'all', label: 'All' },
+        { id: 'processing', label: 'In progress' },
+        { id: 'completed', label: 'Completed' },
+        { id: 'failed', label: 'Failed' },
+        { id: 'canceled', label: 'Canceled' }
+      ];
+
+      return `
+        <div class="space-y-5">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h1 class="text-2xl font-bold text-slate-900 tracking-tight">My videos</h1>
+              <p class="text-xs text-slate-500 mt-1">Watch, multi-select, and download your watermark-free videos.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              ${state.selectedVideoIds.length > 0 ? `
+                <button onclick="downloadSelectedVideos()" class="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold cursor-pointer">
+                  Download Selected (${state.selectedVideoIds.length})
+                </button>
+              ` : ''}
+              <button onclick="navigate('create')" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition cursor-pointer">
+                + Create video
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Bar -->
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              ${tabs.map(t => `
+                <button onclick="setVideoFilter('status', '${t.id}')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                  state.videoFilterStatus === t.id
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }">
+                  ${t.label}
+                </button>
+              `).join('')}
+              <span class="text-xs text-slate-400 font-medium ml-2">${filtered.length} videos</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <select onchange="setVideoFilter('date', this.value)" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none">
+                <option value="last3" ${state.videoFilterDate === 'last3' ? 'selected' : ''}>Last 3 days</option>
+                <option value="today" ${state.videoFilterDate === 'today' ? 'selected' : ''}>Today</option>
+                <option value="any" ${state.videoFilterDate === 'any' ? 'selected' : ''}>Any time</option>
+              </select>
+              <button onclick="setVideoFilter('reset')" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-600 cursor-pointer">
+                Reset
+              </button>
+            </div>
+          </div>
+
+          ${filtered.length === 0 ? `
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-14 text-center space-y-3">
+              <div class="text-base font-bold text-slate-800">No videos match these filters</div>
+              <p class="text-xs text-slate-500">Clear the filters to see all videos.</p>
+              <button onclick="setVideoFilter('reset')" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer">
+                Clear filters
+              </button>
+            </div>
+          ` : `
+            <div class="space-y-4">
+              ${filtered.map(b => {
+                const checked = state.selectedVideoIds.includes(b.videoId);
+                return `
+                  <div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 space-y-3 shadow-2xs">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-700">${b.id}</span>
+                      <span class="text-[11px] text-slate-400">${b.model} • ${b.aspectRatio} • ${b.resolution}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div class="rounded-xl border ${checked ? 'border-brand-500 ring-2 ring-brand-500/20' : 'border-slate-200'} overflow-hidden bg-slate-50 group">
+                        <!-- Video Visual Thumbnail Preview -->
+                        ${b.videoUrl ? `<video controls preload="metadata" class="w-full h-44 object-contain bg-slate-950" src="${b.videoUrl}" onclick="event.stopPropagation()"></video>` : `<div onclick="openVideoPreviewModal('${b.id}')" class="relative h-44 bg-gradient-to-br from-slate-800 via-slate-900 to-emerald-950 p-3 flex flex-col justify-between cursor-pointer">
+                          <div class="flex items-center justify-between">
+                            ${b.status === 'processing' ? `
+                              <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/90 text-white">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white pulse-dot"></span>
+                                Processing
+                              </span>
+                            ` : `
+                              <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-brand-600 text-white">
+                                ✓ Done
+                              </span>
+                            `}
+                            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white">${b.duration}</span>
+                          </div>
+
+                          <div class="mx-auto w-11 h-11 rounded-full bg-white/20 backdrop-blur-xs text-white flex items-center justify-center group-hover:scale-110 transition">
+                            <svg class="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                          </div>
+
+                          <div class="text-[11px] text-slate-200 line-clamp-1 bg-black/40 px-2 py-1 rounded">
+                            ${b.prompt}
+                          </div>
+                        </div>`}
+
+                        <!-- Card Metadata & Select -->
+                        <div class="p-3 bg-white flex items-center justify-between">
+                          <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSelectVideo('${b.videoId}')" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                            <div>
+                              <div class="text-xs font-bold text-slate-800">Video ${b.videoId}</div>
+                              <div class="text-[11px] text-slate-400">${b.status === 'completed' ? 'Finished' : b.status === 'failed' ? 'Failed' : 'In progress'} • ${b.createdAt}</div>
+                            </div>
+                          </label>
+                          <button onclick="triggerVideoDownload('${b.videoId}', '${b.id}')" class="p-2 rounded-lg text-slate-600 hover:bg-brand-50 hover:text-brand-700 transition cursor-pointer" title="Download watermark-free MP4">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function setVideoFilter(kind, val) {
+      if (kind === 'reset') {
+        state.videoFilterStatus = 'all';
+        state.videoFilterDate = 'last3';
+      } else if (kind === 'status') {
+        state.videoFilterStatus = val;
+      } else if (kind === 'date') {
+        state.videoFilterDate = val;
+      }
+      saveState();
+      renderPage();
+    }
+
+    function toggleSelectVideo(videoId) {
+      const idx = state.selectedVideoIds.indexOf(videoId);
+      if (idx > -1) state.selectedVideoIds.splice(idx, 1);
+      else state.selectedVideoIds.push(videoId);
+      saveState();
+      renderPage();
+    }
+
+    function downloadSelectedVideos() {
+      showToast('Bulk Download Started', `Preparing ${state.selectedVideoIds.length} watermark-free MP4 video(s).`);
+      state.selectedVideoIds = [];
+      saveState();
+      renderPage();
+    }
+
+    // =========================================================================
+    // PAGE 5: ACCOUNT & CREDIT WALLET
+    // =========================================================================
+    function renderAccountPage() {
+      const user = getCurrentUser();
+      const userTxs = state.transactions.filter(t => t.userId === user.id);
+
+      return `
+        <div class="max-w-3xl space-y-6">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Account</h1>
+            <button onclick="logoutApp()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer">
+              Sign out
+            </button>
+          </div>
+
+          <!-- Profile Header Card -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 flex items-center justify-between flex-wrap gap-4 shadow-2xs">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-200 text-brand-700 font-extrabold text-lg flex items-center justify-center uppercase">
+                ${user.email[0]}
+              </div>
+              <div>
+                <div class="text-base font-bold text-slate-900">${user.email}</div>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs text-slate-500">Personal account</span>
+                  <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${user.approved ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
+                    ${user.approved ? '✓ Approved' : '⏳ Pending Approval'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button onclick="openChangePasswordModal()" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition cursor-pointer">
+              Change password
+            </button>
+          </div>
+
+          <!-- Super-Linked Account Rows (Matching Reference UI) -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 divide-y divide-slate-100 overflow-hidden shadow-2xs">
+            <button onclick="openTopUpModal()" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition text-left cursor-pointer">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center font-bold">💳</span>
+                <div>
+                  <div class="text-sm font-semibold text-slate-900">My Credit Wallet</div>
+                  <div class="text-xs text-slate-400">Request credit top-up or view rate card</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-extrabold text-slate-900">${user.credits.toLocaleString()} Credits</span>
+                <span class="text-slate-400">›</span>
+              </div>
+            </button>
+
+            <button onclick="document.getElementById('tx-ledger-card').scrollIntoView({behavior:'smooth'})" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition text-left cursor-pointer">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">🧾</span>
+                <div>
+                  <div class="text-sm font-semibold text-slate-900">Transactions</div>
+                  <div class="text-xs text-slate-400">Full credit deduction and admin allocation history</div>
+                </div>
+              </div>
+              <span class="text-slate-400">›</span>
+            </button>
+
+            <button onclick="openHelpPaymentModal()" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition text-left cursor-pointer">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">❓</span>
+                <div>
+                  <div class="text-sm font-semibold text-slate-900">Help & payment</div>
+                  <div class="text-xs text-slate-400">Payment instructions, manual approval process & FAQ</div>
+                </div>
+              </div>
+              <span class="text-slate-400">›</span>
+            </button>
+
+            <button onclick="navigate('developer')" class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition text-left cursor-pointer">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">&lt;/&gt;</span>
+                <div>
+                  <div class="text-sm font-semibold text-slate-900">API & Developer</div>
+                  <div class="text-xs text-slate-400">Manage personal API keys and webhook integration</div>
+                </div>
+              </div>
+              <span class="text-slate-400">›</span>
+            </button>
+          </div>
+
+          <!-- Credit Ledger Table -->
+          <div id="tx-ledger-card" class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 space-y-4 shadow-2xs">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-bold text-slate-900">Recent Credit Transactions</h2>
+              <button onclick="openTopUpModal()" class="text-xs font-semibold text-brand-600 hover:underline cursor-pointer">+ Request Top-Up</button>
+            </div>
+            <div class="divide-y divide-slate-100">
+              ${userTxs.length === 0 ? `<div class="py-6 text-center text-xs text-slate-400">No credit transactions yet.</div>` : userTxs.map(tx => `
+                <div class="py-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div class="text-xs font-semibold text-slate-800">${tx.note}</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">${tx.id} • ${tx.date}</div>
+                  </div>
+                  <span class="text-xs font-extrabold ${tx.amount > 0 ? 'text-brand-600' : 'text-slate-700'}">
+                    ${tx.amount > 0 ? '+' + tx.amount : tx.amount} Credits
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Support Box & Sign Out -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 p-5 space-y-3 shadow-2xs">
+            <div class="text-xs font-semibold text-slate-600">Need help? Message us on WhatsApp.</div>
+            <div class="grid grid-cols-1 gap-3">
+              <a href="https://wa.me/${WHATSAPP_NUMBER}" target="_blank" rel="noopener" class="py-2.5 px-4 rounded-xl border border-slate-200 hover:border-brand-500 text-xs font-semibold text-slate-800 flex items-center justify-center gap-2 transition">
+                <span class="text-brand-600 font-bold">WhatsApp · 03079709624</span> →
+              </a>
+            </div>
+          </div>
+
+          <button onclick="openAccountSwitcherModal()" class="w-full py-3 rounded-xl border border-red-200 bg-white hover:bg-red-50 text-red-600 text-xs font-bold transition cursor-pointer">
+            Switch Account / Sign out
+          </button>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // PAGE 6: API & DEVELOPER
+    // =========================================================================
+    function renderDeveloperPage() {
+      const user = getCurrentUser();
+      const snippet = `curl -X POST https://api.zahidai.com/v1/videos/generate \\
+  -H "Authorization: Bearer Not enabled" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "kling-4.0-flash",
+    "prompt": "Slow camera tilt upwards, golden hour sunlight",
+    "duration": "10s",
+    "aspect_ratio": "9:16"
+  }'`;
+
+      return `
+        <div class="max-w-4xl space-y-6">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">API & Developer</h1>
+            <p class="text-xs text-slate-500 mt-1">Integrate Zahid AI video generation into your apps while routing through your Admin credit & approval controller.</p>
+          </div>
+
+          <!-- Architecture Blueprint Banner -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 space-y-4 shadow-2xs">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <h2 class="text-base font-bold text-slate-900">How Video Generation Works</h2>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 border border-brand-200">Proxy Architecture Ready</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="font-bold text-slate-900">1. Zahid AI Frontend</div>
+                <p class="text-slate-500 mt-1">Users sign up, select Kling 4.0 / Motion Control / Omni Reference, and submit jobs using Credits.</p>
+              </div>
+              <div class="p-4 rounded-xl bg-brand-50/70 border border-brand-200">
+                <div class="font-bold text-brand-800">2. Admin & Credit Middleware</div>
+                <p class="text-brand-700 mt-1">Verifies manual Admin approval, checks user Credit balance, and deducts your custom token rate.</p>
+              </div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="font-bold text-slate-900">3. Secure video provider</div>
+                <p class="text-slate-500 mt-1">Forwards job payload using your Master API key (configured in Admin Panel) and returns watermark-free MP4.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Personal API Key Card -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 space-y-4 shadow-2xs">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h2 class="text-base font-bold text-slate-900">Your Zahid AI Secret API Key</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Keep this key confidential. Calls deduct credits from <strong>${user.email}</strong>.</p>
+              </div>
+              <button onclick="regenerateUserApiKey()" class="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer">
+                Regenerate Key
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <code class="text-xs font-mono font-semibold text-slate-800 flex-1 truncate">Not enabled</code>
+              <button onclick="showToast('API unavailable', 'Public developer API keys are not configured.', 'warning')" class="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold cursor-pointer">
+                Copy Key
+              </button>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-700">Quick Start cURL Example</span>
+                <button onclick="copyTextFallback(\`${snippet.replace(/`/g, '')}\`, 'cURL Snippet Copied')" class="text-xs font-semibold text-brand-600 hover:underline cursor-pointer">Copy snippet</button>
+              </div>
+              <pre class="bg-slate-900 text-emerald-300 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed"><code>${snippet}</code></pre>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function regenerateUserApiKey() {
+      const user = getCurrentUser();
+      user.apiKey = ''; // Public API keys are not generated by this site.
+      saveState();
+      renderPage();
+      showToast('API keys unavailable', 'This website does not currently issue public API keys.');
+    }
+
+    // =========================================================================
+    // PAGE 7: ADMIN PANEL (COMPLETE OWNER CONTROL CENTER)
+    // =========================================================================
+    function renderAdminPage() {
+      const totalUsers = state.users.length;
+      const pendingUsers = state.users.filter(u => !u.approved).length;
+      const pendingReqs = state.creditRequests.filter(r => r.status === 'pending').length;
+      const totalCredits = state.users.reduce((acc, u) => acc + u.credits, 0);
+
+      const subTabs = [
+        { id: 'users', label: `Users & Manual Approval (${pendingUsers} Pending)` },
+        { id: 'requests', label: `Credit Top-Up Requests (${pendingReqs} Pending)` },
+        { id: 'pricing', label: 'Credit Pricing & Packages' },
+        { id: 'api', label: 'API & Domain Settings' }
+      ];
+
+      return `
+        <div class="space-y-6">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Admin Control Panel</h1>
+                <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-brand-600 text-white">OWNER</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">Approve users, manage credits, review payments, and monitor the connected video service.</p>
+            </div>
+
+          </div>
+
+          <!-- KPI Summary Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs">
+              <div class="text-xs text-slate-500 font-medium">Total Users</div>
+              <div class="text-2xl font-extrabold text-slate-900 mt-1">${totalUsers}</div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs">
+              <div class="text-xs text-slate-500 font-medium">Pending Approvals</div>
+              <div class="text-2xl font-extrabold text-amber-600 mt-1">${pendingUsers}</div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs">
+              <div class="text-xs text-slate-500 font-medium">Credit Requests</div>
+              <div class="text-2xl font-extrabold text-brand-600 mt-1">${pendingReqs}</div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs">
+              <div class="text-xs text-slate-500 font-medium">Credits Circulating</div>
+              <div class="text-2xl font-extrabold text-slate-900 mt-1">${totalCredits.toLocaleString()}</div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs col-span-2 lg:col-span-1">
+              <div class="text-xs text-slate-500 font-medium">Live Provider Wallet</div>
+              <div class="text-sm font-extrabold text-brand-700 mt-2">${state.settings.apiWallet ? `${Number(state.settings.apiWallet.balance).toLocaleString()} ${state.settings.apiWallet.currency || 'VND'}` : (state.settings.apiWalletError || 'Unavailable')}</div>
+              <button onclick="testUpstreamApiConnection()" class="mt-1 text-[11px] font-semibold text-brand-600 hover:underline">Refresh live balance</button>
+            </div>
+          </div>
+
+          <!-- Admin Sub-Navigation Tabs -->
+          <div class="flex items-center gap-2 flex-wrap border-b border-slate-200 pb-3">
+            ${subTabs.map(t => `
+              <button onclick="setAdminSubTab('${t.id}')" class="px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                state.adminSubTab === t.id
+                  ? 'bg-brand-600 text-white shadow-2xs'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+              }">
+                ${t.label}
+              </button>
+            `).join('')}
+          </div>
+
+          <!-- Sub-Tab Body -->
+          ${state.adminSubTab === 'users' ? renderAdminUsersTab() : ''}
+          ${state.adminSubTab === 'requests' ? renderAdminRequestsTab() : ''}
+          ${state.adminSubTab === 'pricing' ? renderAdminPricingTab() : ''}
+          ${state.adminSubTab === 'api' ? renderAdminApiTab() : ''}
+        </div>
+      `;
+    }
+
+    function setAdminSubTab(tab) {
+      state.adminSubTab = tab;
+      saveState();
+      renderPage();
+    }
+    async function refreshAdminDashboard() {
+      try { await refreshDatabaseState(); renderShell(); renderPage(); showToast('Admin data refreshed', 'User approvals, payment requests, jobs, and the live API wallet were reloaded.'); }
+      catch (error) { showToast('Could not refresh admin data', error.message, 'error'); }
+    }
+
+    function renderAdminUsersTab() {
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+            <h2 class="text-base font-bold text-slate-900">User Management & Manual Approval</h2>
+            <span class="text-xs text-slate-400">Unapproved users cannot generate videos until you approve them here.</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th class="py-3 px-5">User / Email</th>
+                  <th class="py-3 px-4">Approval Status</th>
+                  <th class="py-3 px-4">Credits Balance</th>
+                  <th class="py-3 px-4">Videos</th>
+                  <th class="py-3 px-5 text-right">Admin Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-xs">
+                ${state.users.map(u => `
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="py-3.5 px-5">
+                      <div class="font-bold text-slate-900 flex items-center gap-2">
+                        <span>${u.email}</span>
+                        ${u.id === state.activeUserId ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">Active Session</span>` : ''}
+                      </div>
+                      <div class="text-[11px] text-slate-400 mt-0.5">${u.role} • Joined ${u.joinedAt}</div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                      ${u.approved ? `
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-semibold bg-brand-50 text-brand-700 border border-brand-200">✓ Approved</span>
+                      ` : `
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-semibold bg-amber-50 text-amber-700 border border-amber-200">⏳ Pending Approval</span>
+                      `}
+                    </td>
+                    <td class="py-3.5 px-4 font-extrabold text-slate-900 text-sm">
+                      ${u.credits.toLocaleString()} Credits
+                    </td>
+                    <td class="py-3.5 px-4 text-slate-600 font-medium">${u.videosCount}</td>
+                    <td class="py-3.5 px-5">
+                      <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                        ${!u.isAdmin ? `<button onclick="adminToggleUserApproval('${u.id}')" class="px-2.5 py-1.5 rounded-lg font-semibold transition cursor-pointer ${
+                          u.approved
+                            ? 'border border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-700'
+                            : 'bg-brand-600 text-white hover:bg-brand-700'
+                        }">
+                          ${u.approved ? 'Revoke' : 'Approve User'}
+                        </button><button onclick="adminPromoteUser('${u.id}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold cursor-pointer">Make Admin</button>` : `<span class="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 font-bold">Admin access</span>`}
+                        <button onclick="adminAdjustCredits('${u.id}', 100)" class="px-2.5 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold cursor-pointer">+100</button>
+                        <button onclick="adminAdjustCredits('${u.id}', 500)" class="px-2.5 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold cursor-pointer">+500</button>
+                        <button onclick="openCustomCreditModal('${u.id}')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer">Custom ±</button>
+                        ${u.id !== state.activeUserId ? `
+                          <button onclick="switchActiveUser('${u.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-900 text-white font-semibold cursor-pointer" title="Preview website as this user">Login As</button>
+                        ` : ''}
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAdminRequestsTab() {
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs">
+          <div class="px-6 py-4 border-b border-slate-100">
+            <h2 class="text-base font-bold text-slate-900">Credit Top-Up Requests Queue</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Verify user payment transaction IDs and approve to instantly add Credits to their account.</p>
+          </div>
+          <div class="divide-y divide-slate-100">
+            ${state.creditRequests.length === 0 ? `<div class="p-10 text-center text-xs text-slate-400">No credit top-up requests yet.</div>` : state.creditRequests.map(req => `
+              <div class="p-5 flex items-center justify-between flex-wrap gap-4">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-900">${req.id}</span>
+                    <span class="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">+${req.credits.toLocaleString()} Credits (${req.packageName})</span>
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      req.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                      req.status === 'approved' ? 'bg-brand-50 text-brand-700 border border-brand-200' :
+                      'bg-red-50 text-red-700 border border-red-200'
+                    }">${req.status.toUpperCase()}</span>
+                  </div>
+                  <div class="text-xs text-slate-700">User: <strong>${req.userEmail}</strong> • Paid: <strong>${req.amountPaid}</strong> via <strong>${req.method}</strong></div>
+                  <div class="text-[11px] text-slate-400">Transaction ID: <code class="text-slate-700 font-semibold">${req.txId}</code> • ${req.createdAt}</div>
+                </div>
+
+                ${req.status === 'pending' ? `
+                  <div class="flex items-center gap-2">
+                    <button onclick="handleCreditRequestAction('${req.id}', 'rejected')" class="px-3.5 py-2 rounded-xl border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold cursor-pointer">
+                      Reject
+                    </button>
+                    <button onclick="handleCreditRequestAction('${req.id}', 'approved')" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-2xs cursor-pointer">
+                      ✓ Approve & Add ${req.credits} Credits
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAdminPricingTab() {
+      return `
+        <div class="max-w-3xl bg-white rounded-2xl border border-slate-200/90 p-6 space-y-5 shadow-2xs">
+          <div><h2 class="text-base font-bold text-slate-900">Credit Pricing & Payment Methods</h2><p class="text-xs text-slate-500 mt-1">The backend gets live video prices. Set how many Zahid AI credits equal one VND, your payment currency, and the methods you accept.</p></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <label class="block font-semibold text-slate-700">Credits per 1 VND<input id="admin-credit-rate" type="number" min="0.000001" step="any" value="${Number(state.settings.creditsPerVnd || 1)}" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200"></label>
+            <label class="block font-semibold text-slate-700">Payment currency<input id="admin-currency" maxlength="6" value="${state.settings.currency || 'PKR'}" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200"></label>
+            <label class="block font-semibold text-slate-700 sm:col-span-2">Accepted payment methods (comma separated)<input id="admin-methods" value="${(state.settings.paymentMethods || []).join(', ')}" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200"></label>
+          </div>
+          <button onclick="saveAdminPricing()" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold">Save Pricing & Payment Methods</button>
+        </div>`;
+    }
+
+    function renderAdminApiTab() {
+      const cfg = state.settings;
+      const wallet = cfg.apiWallet;
+      return `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 p-6 space-y-4 shadow-2xs">
+          <div class="flex items-center justify-between"><div><h2 class="text-base font-bold text-slate-900">Main Video Account</h2><p class="text-xs text-slate-500 mt-1">Video jobs use the private server key and charge your linked provider wallet.</p></div><button onclick="testUpstreamApiConnection()" class="px-3 py-2 rounded-xl bg-brand-50 text-brand-700 text-xs font-bold">Refresh wallet</button></div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4"><div class="text-xs text-slate-500">Live API wallet balance</div><div class="mt-1 text-xl font-extrabold text-slate-900">${wallet ? `${Number(wallet.balance).toLocaleString()} ${wallet.currency || 'VND'}` : 'Unavailable'}</div><div class="text-xs text-slate-500 mt-1">${wallet ? `Held reserve: ${Number(wallet.heldReserve || 0).toLocaleString()} ${wallet.currency || 'VND'} · updated ${wallet.updatedAt || 'recently'}` : (cfg.apiWalletError || 'Select Refresh wallet to load your live balance.')}</div></div>
+            <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">The API key stays on the server in <code>KLING_API_KEY</code>; it is never sent to visitors’ browsers.</div>
+          </div>
+          <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/90 p-6 space-y-4">
+            <h2 class="text-base font-bold text-slate-900">Manual Payment Instructions</h2><p class="text-xs text-slate-500">Users see these instructions when requesting credits. Approve their request after confirming payment.</p>
+            <label class="block text-xs font-semibold text-slate-700">Instructions<textarea id="cfg_pay" rows="5" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200">${cfg.paymentInstructions || ''}</textarea></label>
+            <h3 class="pt-2 text-base font-bold text-slate-900">Homepage Social Links</h3><p class="text-xs text-slate-500">Add your public profile URLs. Only links you fill in will appear in the footer.</p>
+            ${[['tiktok','TikTok'],['youtube','YouTube'],['facebook','Facebook'],['instagram','Instagram']].map(([key,label])=>`<label class="block text-xs font-semibold text-slate-700">${label} profile URL<input id="social-${key}" type="url" placeholder="https://www.${key}.com/yourprofile" value="${escapePublicText(cfg.socialLinks?.[key] || '')}" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200"></label>`).join('')}
+            <button onclick="saveAdminSettings()" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold">Save Payment &amp; Social Links</button>
+          </div>
+        </div>`;
+    }
+
+    // Admin Actions
+    async function adminToggleUserApproval(userId) {
+      const u = state.users.find(x => String(x.id) === String(userId)); if (!u) return;
+      try { await backend(`/api/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify({ status: u.approved ? 'suspended' : 'active' }) }); await refreshDatabaseState(); renderShell(); renderPage(); showToast(u.approved ? 'User Suspended' : 'User Approved', `${u.email} account status updated.`); }
+      catch (error) { showToast('Could not update user', error.message, 'error'); }
+    }
+
+    async function adminPromoteUser(userId) {
+      const user = state.users.find(item => String(item.id) === String(userId));
+      if (!user || user.isAdmin) return;
+      try {
+        await backend(`/api/admin/users/${userId}/promote`, { method: 'POST', body: JSON.stringify({}) });
+        await refreshDatabaseState(); renderShell(); renderPage();
+        showToast('Administrator added', `${user.email} now has administrator access.`);
+      } catch (error) { showToast('Could not add administrator', error.message, 'error'); }
+    }
+
+    async function adminAdjustCredits(userId, delta) {
+      const u = state.users.find(x => String(x.id) === String(userId)); if (!u) return;
+      try { await backend(`/api/admin/users/${userId}/credits`, { method: 'POST', body: JSON.stringify({ amount: Number(delta), note: 'Admin credit adjustment' }) }); await refreshDatabaseState(); renderShell(); renderPage(); showToast('Credits Updated', `${u.email} balance updated.`); }
+      catch (error) { showToast('Could not update credits', error.message, 'error'); }
+    }
+
+    function openCustomCreditModal(userId) {
+      const u = state.users.find(x => x.id === userId);
+      if (!u) return;
+      openModal(`
+        <div class="p-6 space-y-4">
+          <h3 class="text-lg font-bold text-slate-900">Adjust Credits for ${u.email}</h3>
+          <p class="text-xs text-slate-500">Current Balance: <strong>${u.credits.toLocaleString()} Credits</strong>. Enter a positive number to add or negative (e.g. -100) to deduct.</p>
+          <input id="custom-credit-input" type="number" value="500" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold" />
+          <div class="flex justify-end gap-2">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold">Cancel</button>
+            <button onclick="const val = Number(document.getElementById('custom-credit-input').value || 0); closeModal(); adminAdjustCredits('${u.id}', val);" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">Apply Credits</button>
+          </div>
+        </div>
+      `);
+    }
+
+    async function handleCreditRequestAction(reqId, decision) {
+      try { await backend(`/api/admin/credit-requests/${reqId}`, { method: 'POST', body: JSON.stringify({ decision }) }); await refreshDatabaseState(); renderShell(); renderPage(); showToast(decision === 'approved' ? 'Top-Up Approved' : 'Top-Up Rejected', `Payment request ${reqId} ${decision}.`); }
+      catch (error) { showToast('Could not review request', error.message, 'error'); }
+    }
+
+    async function saveAdminPricing() {
+      try { await backend('/api/admin/settings', { method: 'PUT', body: JSON.stringify({ creditsPerVnd: Number(document.getElementById('admin-credit-rate').value), currency: document.getElementById('admin-currency').value, paymentMethods: document.getElementById('admin-methods').value, paymentInstructions: state.settings.paymentInstructions || '' }) }); await refreshDatabaseState(); renderShell(); renderPage(); showToast('Pricing Saved', 'Credit conversion and accepted payment methods updated.'); }
+      catch (error) { showToast('Could not save pricing', error.message, 'error'); }
+    }
+
+    function saveAdminPackages() {
+      state.packages.forEach((pkg, i) => {
+        pkg.name = document.getElementById(`pkg_name_${i}`).value || pkg.name;
+        pkg.credits = Number(document.getElementById(`pkg_cred_${i}`).value) || pkg.credits;
+        pkg.priceLabel = document.getElementById(`pkg_price_${i}`).value || pkg.priceLabel;
+      });
+      saveState();
+      showToast('Packages Updated', 'User top-up packages updated successfully.');
+    }
+
+    async function saveAdminSettings() {
+      try { const socialLinks = Object.fromEntries(['tiktok','youtube','facebook','instagram'].map(key => [key, document.getElementById(`social-${key}`).value.trim()])); await backend('/api/admin/settings', { method: 'PUT', body: JSON.stringify({ creditsPerVnd: Number(state.settings.creditsPerVnd || 1), currency: state.settings.currency || 'PKR', paymentMethods: (state.settings.paymentMethods || ['Bank transfer']).join(', '), paymentInstructions: document.getElementById('cfg_pay').value, socialLinks }) }); await refreshDatabaseState(); renderShell(); renderPage(); showToast('Settings Saved', 'Payment instructions and homepage social links were updated.'); }
+      catch (error) { showToast('Could not save settings', error.message, 'error'); }
+    }
+
+    async function testUpstreamApiConnection() {
+      try {
+        const overview = await backend('/api/admin/overview');
+        state.settings.apiWallet = overview.wallet;
+        state.settings.apiWalletError = '';
+        state.settings.apiConnected = true;
+        state.adminOverview = overview;
+        renderPage();
+        showToast('Live wallet connected', `${Number(overview.wallet.balance).toLocaleString()} ${overview.wallet.currency} available in your video account.`);
+      } catch (error) {
+        state.settings.apiWallet = null;
+        state.settings.apiWalletError = `${error.message}${error.code ? ` (${error.code})` : ''}`;
+        state.settings.apiConnected = false;
+        renderPage();
+        showToast('Wallet refresh failed', state.settings.apiWalletError, 'error');
+      }
+    }
+
+    function resetDemoData() { showToast('Demo data removed', 'This live website uses database records.'); }
+
+    // =========================================================================
+    // INTERACTIVE MODALS (Top-Up, Preview Player, Signup Simulator, Switcher)
+    // =========================================================================
+    function openTopUpModal() {
+      const methods = state.settings.paymentMethods || [];
+      if (!methods.length || !state.settings.paymentInstructions) return showToast('Payments not configured', 'Ask the site administrator to add payment instructions.', 'warning');
+      openModal(`<div class="p-6 space-y-4"><div class="flex items-center justify-between"><h3 class="text-lg font-bold text-slate-900">Request Credits</h3><button onclick="closeModal()" class="text-slate-400">✕</button></div><div class="p-3 rounded-xl bg-brand-50 border border-brand-200 text-xs text-brand-800 whitespace-pre-wrap">${state.settings.paymentInstructions}</div><div class="grid grid-cols-2 gap-3"><label class="text-xs font-bold">Credits requested<input id="topup-credits" type="number" min="1" required class="w-full mt-1 px-3 py-2 rounded-xl border"></label><label class="text-xs font-bold">Amount paid (${state.settings.currency})<input id="topup-amount" type="number" min="0.01" step="any" required class="w-full mt-1 px-3 py-2 rounded-xl border"></label><label class="text-xs font-bold">Payment method<select id="topup-method" class="w-full mt-1 px-3 py-2 rounded-xl border">${methods.map(m=>`<option>${m}</option>`).join('')}</select></label><label class="text-xs font-bold">Transaction reference<input id="topup-txid" required class="w-full mt-1 px-3 py-2 rounded-xl border"></label></div><div class="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900">After you submit, WhatsApp opens with your request details. Attach your payment screenshot in that chat and press Send so the admin can review it.</div><div class="flex justify-end gap-2"><button onclick="closeModal()" class="px-4 py-2 rounded-xl border text-xs">Cancel</button><button onclick="submitCreditTopUpRequest()" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">Submit &amp; open WhatsApp</button></div></div>`);
+    }
+
+    async function submitCreditTopUpRequest() {
+      const whatsappTab = window.open('about:blank', '_blank');
+      const credits = Number(document.getElementById('topup-credits').value);
+      const paidAmount = Number(document.getElementById('topup-amount').value);
+      const paymentMethod = document.getElementById('topup-method').value;
+      const transactionRef = document.getElementById('topup-txid').value.trim();
+      try {
+        const result = await backend('/api/credit-requests', { method: 'POST', body: JSON.stringify({ credits, paidAmount, paymentMethod, transactionRef }) });
+        await refreshDatabaseState(); closeModal(); renderShell();
+        const message = `Zahid AI credit request #${result.id}\nAccount: ${getCurrentUser().email}\nCredits requested: ${credits.toLocaleString()}\nAmount paid: ${paidAmount} ${state.settings.currency}\nPayment method: ${paymentMethod}\nTransaction reference: ${transactionRef}\nI am attaching my payment screenshot for manual approval.`;
+        if (whatsappTab) whatsappTab.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+        showToast('Credit Request Submitted', `Request #${result.id} is pending admin approval. Attach your payment screenshot in WhatsApp and send the message.`);
+      } catch (error) { if (whatsappTab) whatsappTab.close(); showToast('Could not submit request', error.message, 'error'); }
+    }
+
+    function openVideoPreviewModal(batchId) {
+      const b = state.batches.find(x => x.id === batchId);
+      if (!b) return;
+      openModal(`
+        <div class="overflow-hidden">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-slate-900">Batch ${b.id} • Video ${b.videoId}</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-700">${b.model}</span>
+            </div>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700">✕</button>
+          </div>
+          <div class="bg-slate-950 aspect-video flex items-center justify-center p-3 relative">
+            ${b.videoUrl ? `<video controls class="max-h-full max-w-full" src="${b.videoUrl}"></video>` : `<div class="text-center"><div class="text-sm font-bold text-white">${b.status === 'completed' ? 'Video is ready to download' : `Job status: ${b.status}`}</div><p class="text-xs text-slate-300 max-w-md mt-2">${b.error || b.prompt}</p></div>`}
+          </div>
+          <div class="p-4 bg-white flex items-center justify-between">
+            <span class="text-xs text-slate-500">Aspect: <strong>${b.aspectRatio}</strong> • Cost: <strong>${b.creditsUsed} Credits</strong></span>
+            <button onclick="triggerVideoDownload('${b.videoId}', '${b.id}')" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold cursor-pointer">
+              Download MP4
+            </button>
+          </div>
+        </div>
+      `);
+    }
+
+    function triggerVideoDownload(videoId, batchId) {
+      const item = state.batches.find(x => x.id === batchId);
+      if (!item?.videoUrl) return showToast('Video not ready', 'The secure video link is not available yet.', 'warning');
+      const a = document.createElement('a');
+      a.href = item.videoUrl;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Opening video download', `Your video result for job ${videoId}.`);
+    }
+
+    function openNewSignupDemoModal() { showToast('Real sign-ups', 'Users create their own accounts from the sign-in screen.', 'info'); }
+
+    function createSimulatedUser() { showToast('Unavailable', 'Demo accounts are disabled.', 'warning'); }
+
+    function openAccountSwitcherModal() { logoutApp(); }
+
+    function switchActiveUser(userId) {
+      state.activeUserId = userId;
+      saveState();
+      renderShell();
+      renderPage();
+      const u = getCurrentUser();
+      showToast('Switched Account', `Now viewing Zahid AI as ${u.email}`);
+    }
+
+    function openChangePasswordModal() {
+      openModal(`
+        <div class="p-6 space-y-4">
+          <h3 class="text-lg font-bold text-slate-900">Change Account Password</h3>
+          <input type="password" placeholder="New password" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs" />
+          <div class="flex justify-end gap-2">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold">Cancel</button>
+            <button onclick="closeModal(); showToast('Password Updated', 'Your account security credentials were saved.');" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">Save Password</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function openHelpPaymentModal() {
+      openModal(`
+        <div class="p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-900">Help & Credit Payment Guide</h3>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700">✕</button>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">${state.settings.paymentInstructions}</p>
+          <div class="flex justify-end pt-2">
+            <button onclick="closeModal(); openTopUpModal();" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">Request Credits Now</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function openUserGuideModal() {
+      openModal(`
+        <div class="p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-900">Zahid AI — Kling Video User Guide</h3>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700">✕</button>
+          </div>
+          <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+            <li><strong>Kling 4.0 Flash:</strong> Fastest generation speed with high visual consistency—ideal for multi-shot storytelling.</li>
+            <li><strong>Motion Control:</strong> Upload a sample motion video (2.5s–13s) + character photo to transfer exact body movement.</li>
+            <li><strong>Omni Reference:</strong> Combine up to 10 reference images into a single cohesive scene.</li>
+          </ul>
+          <div class="flex justify-end pt-2">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">Got it</button>
+          </div>
+        </div>
+      `);
+    }
+
+    // =========================================================================
+    // MAIN PAGE ROUTER
+    // =========================================================================
+    function renderPage() {
+      const vp = document.getElementById('app-viewport');
+      if (state.activeRoute === 'admin' && getCurrentUser().role !== 'Owner / Admin') { state.activeRoute = 'home'; state.adminSubTab = 'users'; }
+      switch (state.activeRoute) {
+        case 'home': vp.innerHTML = renderHomePage(); break;
+        case 'create': vp.innerHTML = renderCreateVideoPage(); break;
+        case 'batches': vp.innerHTML = renderBatchesPage(); break;
+        case 'videos': vp.innerHTML = renderMyVideosPage(); break;
+        case 'account': vp.innerHTML = renderAccountPage(); break;
+        case 'developer': vp.innerHTML = renderDeveloperPage(); break;
+        case 'admin': vp.innerHTML = renderAdminPage(); break;
+        default: vp.innerHTML = renderHomePage();
+      }
+    }
+
+    // Close notification popover when clicking outside
+    document.addEventListener('click', (e) => {
+      const pop = document.getElementById('notif-popover');
+      if (pop && !pop.classList.contains('hidden') && !e.target.closest('#notif-popover') && !e.target.closest('button[onclick="toggleNotifications()"]')) {
+        pop.classList.add('hidden');
+      }
+    });
+
+    // Boot the original studio behind real server authentication.
+    window.addEventListener('DOMContentLoaded', async () => {
+      const [prices, publicSettings] = await Promise.all([backend('/api/prices').catch(() => []), backend('/api/public-settings').catch(() => null)]);
+      publicPriceRules = prices;
+      if (publicSettings?.socialLinks) state.settings.socialLinks = publicSettings.socialLinks;
+      try { const session = await backend('/api/me'); csrfToken = session.csrf; await enterApplication(); }
+      catch { showPublicLanding(); }
+    });
+  </script>
+</body>
+</html>
