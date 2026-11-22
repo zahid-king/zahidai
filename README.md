@@ -18,9 +18,22 @@ New registrations become active immediately and can sign in without administrato
 
 ## Public hosting
 
-The included `render.yaml` prepares this Docker app for Render with HTTPS, health checks, private secret prompts, and a persistent disk at `/app/data`. It uses Render's paid 0.5 CPU / 512 MB web plan and a 1 GB persistent disk. At current listed rates these start at about US$7.25/month before bandwidth, tax, or any optional domain; Render requires paid compute for persistent disks. Review the live price before creating the service.
+### HostNexo VPS (chosen setup)
 
-To deploy, push this folder to a private GitHub repository, import the repository into Render as a Blueprint, and enter `KLING_API_KEY`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` when prompted. Keep `.env` out of GitHub. The first cloud start creates the admin account using those environment variables. For repeatable deployments, keep the persistent disk mounted at `/app/data`; without it the SQLite user database and balances can be lost.
+Use a HostNexo VPS, not shared/cPanel hosting. The VPS page advertises root access, which this Docker app needs. Confirm the selected plan is available and supports Docker/Compose before paying; the checkout page may show unavailable inventory. Ask HostNexo to provision a recent Ubuntu LTS VPS with a public IPv4 address and inbound ports 80 and 443 available.
+
+1. Point your domain's DNS `A` record to the VPS public IPv4 address and wait for it to resolve.
+2. Connect to the VPS over SSH. Install Docker Engine and the Docker Compose plugin, or ask HostNexo support to install them.
+3. Clone this public GitHub repository onto the VPS and enter its folder.
+4. Copy `.env.example` to `.env`. Set `KLING_API_KEY`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` (at least 12 characters), and `DOMAIN` to your real values. Keep `.env` private and never upload it to GitHub.
+5. Run `docker compose up -d --build`. The Compose setup runs the app behind Caddy, requests HTTPS for your domain, and stores SQLite data in a persistent Docker volume.
+6. Check startup with `docker compose logs -f app`, then visit your domain and sign in using the admin email and password.
+
+The VPS setup requires maintaining the server and making off-server backups. The Docker volume persists through container rebuilds, but it is not a backup if the VPS itself is lost. Configure HostNexo snapshots or copy regular SQLite backups to a separate storage location. Do not copy the local `data/zahid.sqlite` from your PC unless you intentionally need to migrate its users and balances.
+
+### Render alternative
+
+The included `render.yaml` also prepares the Docker app for Render with HTTPS, health checks, private secret prompts, and a persistent disk at `/app/data`. That setup uses a paid web service and persistent disk. Review current Render pricing before choosing it. The first cloud start creates the admin account from `ADMIN_EMAIL` and `ADMIN_PASSWORD`; keep `.env` out of GitHub.
 
 The cloud service starts with an empty database. Existing local users, credits, jobs, and payment records in `data/zahid.sqlite` are not copied automatically; migrate them to the persistent disk separately if you need to keep them. Do not add the database file or `.env` to the Git repository.
 
